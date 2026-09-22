@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#050609">
+    <title>Planet Lab</title>
+    <link rel="stylesheet" href="style.css">
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.module.js"
+        }
+      }
+    </script>
+</head>
+<body>
+    <main id="game-shell">
+      <canvas id="space-canvas" aria-label="Planet Lab 3D scene"></canvas>
+
+      <section id="loading-ui" class="screen loading-screen" aria-live="polite">
+        <div class="loading-box">
+          <strong>PLANET LAB</strong>
+          <span id="loading-message">Loading Solar System...</span>
+          <span id="loading-progress">0%</span>
+        </div>
+      </section>
+
+      <section id="landing-ui" class="screen landing-screen hidden">
+        <div class="landing-copy">
+          <p class="eyebrow">INTERACTIVE PLANETARY PHYSICS</p>
+          <h1>PLANET LAB</h1>
+          <p>Explore. Experiment. Compare.</p>
+          <button id="start-journey" class="primary-button">START JOURNEY</button>
+        </div>
+      </section>
+
+      <section id="solar-ui" class="screen solar-screen hidden">
+        <div class="top-bar">
+          <div>
+            <p class="eyebrow">SOLAR SYSTEM</p>
+            <p class="control-hint">Scroll or use ← →</p>
+          </div>
+          <button id="solar-home" class="quiet-button">HOME</button>
+        </div>
+        <div class="solar-copy">
+          <p id="solar-subtitle" class="eyebrow"></p>
+          <h2 id="solar-name">Earth</h2>
+          <div class="inline-facts">
+            <span><b id="solar-gravity">9.81</b> m/s² gravity</span>
+            <span id="solar-distance">149.6 million km</span>
+          </div>
+          <button id="explore-planet" class="primary-button">EXPLORE EARTH</button>
+        </div>
+        <div class="solar-nav" aria-label="Planet navigation">
+          <button id="previous-planet" class="nav-button" aria-label="Previous planet">←</button>
+          <span id="planet-position">3 / 8</span>
+          <button id="next-planet" class="nav-button" aria-label="Next planet">→</button>
+        </div>
+      </section>
+
+      <section id="detail-ui" class="screen detail-screen hidden">
+        <div class="detail-copy">
+          <button id="detail-back" class="quiet-button">← SOLAR SYSTEM</button>
+          <p id="detail-subtitle" class="eyebrow"></p>
+          <h2 id="detail-name">MARS</h2>
+          <p id="detail-description" class="description"></p>
+          <dl id="detail-stats" class="stats-list"></dl>
+          <button id="enter-lab" class="primary-button">ENTER PLANET LAB</button>
+        </div>
+      </section>
+
+      <section id="lab-ui" class="screen lab-screen hidden">
+        <div class="top-bar">
+          <div>
+            <p id="lab-location" class="eyebrow">MARS LAB</p>
+            <h3 id="lab-title">Choose an experiment</h3>
+          </div>
+          <button id="lab-back-planet" class="quiet-button">← PLANET</button>
+        </div>
+        <div class="lab-menu-wrap">
+          <nav class="experiment-menu" aria-label="Experiments">
+            <button data-experiment="drop">DROP TEST</button>
+            <button data-experiment="jump">JUMP TEST</button>
+            <button data-experiment="throw">THROW TEST</button>
+            <button data-experiment="weight">WEIGHT TEST</button>
+            <button data-experiment="pendulum">PENDULUM TEST</button>
+            <button data-experiment="launch">LAUNCH TEST</button>
+            <button data-experiment="feather">FEATHER VS HAMMER</button>
+          </nav>
+          <p id="lab-note" class="lab-note"></p>
+        </div>
+      </section>
+
+      <section id="experiment-ui" class="screen experiment-screen hidden">
+        <div class="experiment-header">
+          <div>
