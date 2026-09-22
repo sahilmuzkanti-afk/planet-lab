@@ -95,3 +95,35 @@
       <section id="experiment-ui" class="screen experiment-screen hidden">
         <div class="experiment-header">
           <div>
+            <p id="experiment-context" class="eyebrow">EARTH VS MARS</p>
+            <h3 id="experiment-title">DROP TEST</h3>
+          </div>
+          <button id="back-to-lab" class="quiet-button">← BACK TO LAB</button>
+        </div>
+
+        <div class="world-label world-label-left">
+          <span>EARTH</span>
+          <b>9.81 m/s²</b>
+        </div>
+        <div class="world-label world-label-right">
+          <span id="selected-world-label">MARS</span>
+          <b id="selected-world-gravity">3.71 m/s²</b>
+        </div>
+
+        <aside class="experiment-panel">
+          <div id="experiment-settings" class="settings"></div>
+          <div class="experiment-actions">
+            <button id="run-test" class="primary-button">RUN TEST</button>
+            <button id="reset-test" class="secondary-button">RESET</button>
+            <button id="change-settings" class="quiet-button">CHANGE SETTINGS</button>
+          </div>
+          <div id="experiment-status" class="experiment-status" aria-live="polite">Ready.</div>
+          <div id="experiment-results" class="results"></div>
+        </aside>
+      </section>
+
+      <div id="transition-shade" class="transition-shade" aria-hidden="true"></div>
+    </main>
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
