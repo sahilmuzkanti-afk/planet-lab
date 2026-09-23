@@ -56,3 +56,22 @@ export function calculatePendulumPeriod(length, gravity) {
 export function calculateEscapeVelocity(mass, radiusMeters) {
     return Math.sqrt((2 * G * mass) / radiusMeters);
 }
+
+export function calculateDragForce(density, velocity, dragCoefficient, area) {
+    return 0.5 * density * velocity * velocity * dragCoefficient * area;
+}
+
+export function simulateDragFall({ height, gravity, density, mass, dragCoefficient, area, dt = 1 / 120 }) {
+    let y = height;
+    let velocity = 0;
+    let time = 0;
+    const maxTime = 120;
+    while (y > 0 && time < maxTime) {
+      const drag = calculateDragForce(density, velocity, dragCoefficient, area);
+      const acceleration = gravity - drag / mass;
+      velocity = Math.max(0, velocity + acceleration * dt);
+      y = Math.max(0, y - velocity * dt);
+      time += dt;
+    }
+    return { time, velocity };
+}
