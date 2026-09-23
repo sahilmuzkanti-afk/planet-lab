@@ -36,3 +36,42 @@ export const planets = [
       scale: 0.64
     },
     {
+      name: 'jupiter', displayName: 'Jupiter', subtitle: 'Fifth planet from the Sun',
+      gravity: 24.79, mass: 1.8982e27, radius: 69911, diameter: 139820,
+      averageTemperature: '−110 °C', atmosphere: 'Hydrogen and helium', atmosphericDensity: 0.16,
+      escapeVelocity: 59.5, dayLength: '9 h 56 min', distanceFromSun: '778.5 million km',
+      texture: 'https://edu.solarsystemscope.com/textures/download/2k_jupiter.jpg', accentColor: '#b99b7b', surfaceColor: 0x776759,
+      description: 'The largest planet, a deep hydrogen-helium world with banded clouds and powerful storms.', hasSolidSurface: false,
+      scale: 2.3
+    },
+    {
+      name: 'saturn', displayName: 'Saturn', subtitle: 'Sixth planet from the Sun',
+      gravity: 10.44, mass: 5.6834e26, radius: 58232, diameter: 116464,
+      averageTemperature: '−140 °C', atmosphere: 'Hydrogen and helium', atmosphericDensity: 0.19,
+      escapeVelocity: 35.5, dayLength: '10 h 42 min', distanceFromSun: '1.43 billion km',
+      texture: 'https://edu.solarsystemscope.com/textures/download/2k_saturn.jpg', rings: 'https://edu.solarsystemscope.com/textures/download/2k_saturn_ring_alpha.png', accentColor: '#c1ae79', surfaceColor: 0x81765c,
+      description: 'A low-density gas giant encircled by a broad, intricate system of icy rings.', hasSolidSurface: false,
+      scale: 2.05
+    },
+    {
+      name: 'uranus', displayName: 'Uranus', subtitle: 'Seventh planet from the Sun',
+      gravity: 8.69, mass: 8.6810e25, radius: 25362, diameter: 50724,
+      averageTemperature: '−195 °C', atmosphere: 'Hydrogen, helium, methane', atmosphericDensity: 0.42,
+      escapeVelocity: 21.3, dayLength: '17 h 14 min', distanceFromSun: '2.87 billion km',
+      texture: 'https://edu.solarsystemscope.com/textures/download/2k_uranus.jpg', accentColor: '#87b8bd', surfaceColor: 0x5c8184,
+      description: 'An ice giant with methane-rich upper clouds and a rotation axis tipped dramatically sideways.', hasSolidSurface: false,
+      scale: 1.42
+    },
+    {
+      name: 'neptune', displayName: 'Neptune', subtitle: 'Eighth planet from the Sun',
+      gravity: 11.15, mass: 1.02413e26, radius: 24622, diameter: 49244,
+      averageTemperature: '−200 °C', atmosphere: 'Hydrogen, helium, methane', atmosphericDensity: 0.45,
+      escapeVelocity: 23.5, dayLength: '16 h 6 min', distanceFromSun: '4.50 billion km',
+      texture: 'https://edu.solarsystemscope.com/textures/download/2k_neptune.jpg', accentColor: '#345b9b', surfaceColor: 0x243e6c,
+      description: 'A distant ice giant with fast winds, deep-blue upper clouds and violent weather systems.', hasSolidSurface: false,
+      scale: 1.38
+    }
+];
+
+export const earth = planets.find((planet) => planet.name === 'earth');
+export const planetByName = (name) => planets.find((planet) => planet.name === name) || earth;
