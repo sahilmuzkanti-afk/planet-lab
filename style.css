@@ -63,3 +63,62 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .detail-screen { display: flex; align-items: center; padding: 6vh 6vw; }
 .detail-copy { width: min(520px, 44vw); pointer-events: auto; }
 .detail-copy .quiet-button { margin-bottom: 42px; }
+.description { color: #b7babf; font-size: 15px; line-height: 1.7; max-width: 52ch; }
+.stats-list { display: grid; grid-template-columns: repeat(2, minmax(130px, 1fr)); gap: 0; margin: 24px 0 28px; border-top: 1px solid var(--border); }
+.stat-row { padding: 13px 0; border-bottom: 1px solid var(--border); }
+.stat-row:nth-child(odd) { padding-right: 18px; }
+.stat-row dt { margin-bottom: 5px; color: #858b92; font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+.stat-row dd { margin: 0; color: #e8e8e4; font-size: 14px; line-height: 1.35; }
+
+.lab-screen { padding: 0 4vw; }
+.lab-menu-wrap { position: absolute; left: 4vw; bottom: 6vh; width: min(880px, 92vw); pointer-events: auto; }
+.experiment-menu { display: flex; flex-wrap: wrap; gap: 7px; }
+.experiment-menu button { min-height: 39px; padding: 0 12px; color: #d5d6d5; font-size: 11px; font-weight: 700; letter-spacing: .05em; }
+.lab-note { max-width: 620px; margin: 14px 0 0; color: #8d9299; font-size: 12px; line-height: 1.5; }
+
+.experiment-header { position: absolute; top: 26px; left: 4vw; right: 4vw; display: flex; justify-content: space-between; align-items: flex-start; pointer-events: auto; }
+.world-label { position: absolute; top: 22vh; display: grid; gap: 3px; color: #e6e6e1; font-size: 12px; letter-spacing: .12em; pointer-events: none; }
+.world-label b { color: #8d9298; font-size: 11px; letter-spacing: 0; font-variant-numeric: tabular-nums; }
+.world-label-left { left: 19vw; }
+.world-label-right { right: 17vw; text-align: right; }
+.experiment-panel { position: absolute; left: 4vw; bottom: 4vh; width: min(430px, 92vw); padding: 16px; border: 1px solid var(--border); background: #090b0e; pointer-events: auto; }
+.settings { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 14px; }
+.setting { display: grid; gap: 6px; }
+.setting.wide { grid-column: 1 / -1; }
+.setting label { color: #8f949b; font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.setting input, .setting select { width: 100%; min-height: 38px; padding: 0 10px; border: 1px solid #30343a; border-radius: 3px; background: #111419; color: #eee; }
+.experiment-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.experiment-status { margin-top: 12px; color: #9ba0a7; font-size: 12px; }
+.results { display: grid; gap: 0; margin-top: 10px; border-top: 1px solid var(--border); }
+.result-row { display: grid; grid-template-columns: 1fr auto; gap: 18px; padding: 9px 0; border-bottom: 1px solid #20242a; font-size: 12px; }
+.result-row span { color: #8f949a; }
+.result-row b { color: #efefea; font-variant-numeric: tabular-nums; text-align: right; }
+
+.transition-shade { position: absolute; inset: 0; z-index: 10; background: #050609; opacity: 0; pointer-events: none; transition: opacity 260ms ease; }
+.transition-shade.active { opacity: .72; }
+
+@media (max-width: 820px) {
+    .landing-screen { padding-left: 6vw; }
+    .detail-screen { align-items: flex-end; padding: 5vh 5vw; }
+    .detail-copy { width: 100%; max-height: 65vh; overflow: auto; padding: 16px; border: 1px solid var(--border); background: #090b0e; }
+    .detail-copy .quiet-button { margin-bottom: 24px; }
+    .stats-list { grid-template-columns: 1fr 1fr; }
+    .solar-copy { bottom: 14vh; }
+    .solar-nav { left: 6vw; right: auto; bottom: 6vh; }
+    .world-label { top: 18vh; }
+    .world-label-left { left: 7vw; }
+    .world-label-right { right: 7vw; }
+    .experiment-panel { left: 3vw; right: 3vw; bottom: 2vh; width: auto; max-height: 43vh; overflow: auto; }
+}
+
+@media (max-width: 520px) {
+    h1 { font-size: 50px; }
+    h2 { font-size: 46px; }
+    .top-bar { top: 18px; }
+    .solar-copy { left: 5vw; width: 90vw; }
+    .experiment-header { top: 18px; }
+    .experiment-header h3 { font-size: 20px; }
+    .settings { grid-template-columns: 1fr; }
+    .setting.wide { grid-column: auto; }
+    .world-label { top: 16vh; }
+}
