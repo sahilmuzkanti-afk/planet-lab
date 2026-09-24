@@ -173,3 +173,20 @@ export class SolarSystemScene {
       return this.planetMeshes[this.selectedIndex];
     }
 
+    update(dt) {
+      this.planetMeshes.forEach((mesh, index) => {
+        mesh.rotation.y += dt * (0.07 + index * 0.006);
+        const clouds = mesh.getObjectByName('earth-clouds');
+        if (clouds) clouds.rotation.y += dt * 0.025;
+        const targetX = (index - this.selectedIndex) * 7;
+        const targetY = index % 2 === 0 ? 0 : 0.25;
+        const targetZ = index === this.selectedIndex ? 0 : -1.6;
+        const targetScale = index === this.selectedIndex ? 1.15 : 0.72;
+        mesh.position.x += (targetX - mesh.position.x) * Math.min(1, dt * 4.5);
+        mesh.position.y += (targetY - mesh.position.y) * Math.min(1, dt * 4.5);
+        mesh.position.z += (targetZ - mesh.position.z) * Math.min(1, dt * 4.5);
+        const scale = mesh.scale.x + (targetScale - mesh.scale.x) * Math.min(1, dt * 4.5);
+        mesh.scale.setScalar(scale);
+      });
+    }
+}
