@@ -78,3 +78,23 @@ export class PlanetViewScene {
       this.loader.load(planet.rings, (texture) => {
         texture.colorSpace = THREE.SRGBColorSpace;
         material.map = texture;
+        material.alphaMap = texture;
+        material.color.set(0xffffff);
+        material.needsUpdate = true;
+      }, undefined, () => {});
+    }
+
+    enter(camera) {
+      camera.position.set(0, 0.3, 9.8);
+      camera.fov = 43;
+      camera.updateProjectionMatrix();
+      camera.lookAt(0.8, 0, 0);
+    }
+
+    update(dt) {
+      if (this.mesh) this.mesh.rotation.y += dt * 0.07;
+      const clouds = this.planetGroup.getObjectByName('detail-earth-clouds');
+      if (clouds) clouds.rotation.y += dt * 0.045;
+      this.planetGroup.rotation.z = Math.sin(performance.now() * 0.00007) * 0.012;
+    }
+}
