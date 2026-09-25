@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { planets } from './planets.js';
+import { applyAlphaTexture, applyColorTexture, loadColorTexture } from './textures.js';
 
 function starField(count = 2200, radius = 120) {
     const positions = new Float32Array(count * 3);
@@ -42,15 +43,10 @@ export class SolarSystemScene {
       const sun = new THREE.Mesh(new THREE.SphereGeometry(5.2, 64, 64), material);
       sun.position.set(-24, 1, -6);
       this.group.add(sun);
-      this.textureLoader.load(
+      loadColorTexture(
+        this.textureLoader,
         'https://edu.solarsystemscope.com/textures/download/2k_sun.jpg',
-        (texture) => {
-          texture.colorSpace = THREE.SRGBColorSpace;
-          material.map = texture;
-          material.color.set(0xffffff);
-          material.needsUpdate = true;
-        },
-        undefined,
+        (texture) => applyColorTexture(material, texture),
         () => {}
       );
     }
@@ -69,10 +65,120 @@ export class SolarSystemScene {
         mesh.userData.baseRadius = baseRadius;
         this.group.add(mesh);
         this.planetMeshes.push(mesh);
-        this.textureLoader.load(
+        loadColorTexture(
+          this.textureLoader,
           planet.texture,
           (texture) => {
-            texture.colorSpace = THREE.SRGBColorSpace;
             texture.anisotropy = 4;
-            material.map = texture;
-            material.color.set(0xffffff);
+            applyColorTexture(material, texture);
+          },
+          () => {}
+        );
+        if (planet.name === 'saturn') this.addRings(mesh, planet);
+        if (planet.name === 'earth') this.addEarthLayers(mesh, planet);
+        mesh.position.x = (index - this.selectedIndex) * 7;
+      });
+    }
+
+    addEarthLayers(planetMesh, planet) {
+      const radius = planetMesh.userData.baseRadius;
+      const atmosphere = new THREE.Mesh(
+        new THREE.SphereGeometry(radius * 1.035, 48, 36),
+        new THREE.MeshBasicMaterial({ color: planet.accentColor, transparent: true, opacity: 0.08, side: THREE.BackSide })
+      );
+      planetMesh.add(atmosphere);
+      const cloudMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.34, depthWrite: false, roughness: 1 });
+      const clouds = new THREE.Mesh(new THREE.SphereGeometry(radius * 1.012, 48, 36), cloudMaterial);
+      clouds.name = 'earth-clouds';
+      planetMesh.add(clouds);
+      this.textureLoader.load(
+        planet.clouds,
+        (texture) => applyAlphaTexture(cloudMaterial, texture),
+        undefined,
+        () => { clouds.visible = false; }
+      );
+    }
+
+    addRings(planetMesh, planet) {
+      const radius = planetMesh.userData.baseRadius;
+      const geometry = new THREE.RingGeometry(radius * 1.25, radius * 2.05, 128);
+      const material = new THREE.MeshStandardMaterial({
+        color: 0xb8a679,
+        transparent: true,
+        opacity: 0.72,
+        side: THREE.DoubleSide,
+        roughness: 0.8
+      });
+      const ring = new THREE.Mesh(geometry, material);
+      ring.rotation.x = Math.PI / 2.15;
+      planetMesh.add(ring);
+      loadColorTexture(
+        this.textureLoader,
+        planet.rings,
+        (texture) => {
+          applyColorTexture(material, texture);
+          material.alphaMap = texture;
+        },
+        () => {}
+      );
+    }
+
+    enter(camera) {
+      camera.position.set(0, 1.2, 13);
+      camera.fov = 46;
+      camera.updateProjectionMatrix();
+      camera.lookAt(0, 0, 0);
+      this.snapLayout();
+    }
+
+    snapLayout() {
+      this.planetMeshes.forEach((mesh, index) => {
+        mesh.position.x = (index - this.selectedIndex) * 7;
+        mesh.position.y = index % 2 === 0 ? 0 : 0.25;
+        mesh.position.z = index === this.selectedIndex ? 0 : -1.6;
+        const prominence = index === this.selectedIndex ? 1.15 : 0.72;
+        mesh.scale.setScalar(prominence);
+      });
+    }
+
+    setSelectedIndex(index) {
+      this.targetIndex = Math.max(0, Math.min(planets.length - 1, index));
+      if (this.targetIndex !== this.selectedIndex) {
+        this.selectedIndex = this.targetIndex;
+        if (this.onSelectionChange) this.onSelectionChange(this.getSelectedPlanet(), this.selectedIndex);
+      }
+    }
+
+    next() {
+      this.setSelectedIndex(this.selectedIndex + 1);
+    }
+
+    previous() {
+      this.setSelectedIndex(this.selectedIndex - 1);
+    }
+
+    getSelectedPlanet() {
+      return planets[this.selectedIndex];
+    }
+
+    getSelectedMesh() {
+      return this.planetMeshes[this.selectedIndex];
+    }
+
+    update(dt) {
+      this.planetMeshes.forEach((mesh, index) => {
+        mesh.rotation.y += dt * (0.07 + index * 0.006);
+        const clouds = mesh.getObjectByName('earth-clouds');
+        if (clouds) clouds.rotation.y += dt * 0.025;
+        const targetX = (index - this.selectedIndex) * 7;
+        const targetY = index % 2 === 0 ? 0 : 0.25;
+        const targetZ = index === this.selectedIndex ? 0 : -1.6;
+        const targetScale = index === this.selectedIndex ? 1.15 : 0.72;
+        mesh.position.x += (targetX - mesh.position.x) * Math.min(1, dt * 4.5);
+        mesh.position.y += (targetY - mesh.position.y) * Math.min(1, dt * 4.5);
+        mesh.position.z += (targetZ - mesh.position.z) * Math.min(1, dt * 4.5);
+        const scale = mesh.scale.x + (targetScale - mesh.scale.x) * Math.min(1, dt * 4.5);
+        mesh.scale.setScalar(scale);
+      });
+    }
+}
