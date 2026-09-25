@@ -172,3 +172,40 @@ export class PlanetLabScene {
       camera.lookAt(0, 0, -1.8);
       this.setExperimentMode(false);
     }
+
+    setExperimentMode(active) {
+      this.defaultLab.visible = !active;
+      this.comparison.visible = active;
+    }
+
+    getStage(side) {
+      return side === 'earth' ? this.leftVisuals : this.rightVisuals;
+    }
+
+    clearExperimentVisuals() {
+      this.clearGroup(this.leftVisuals);
+      this.clearGroup(this.rightVisuals);
+    }
+
+    clearGroup(group) {
+      while (group.children.length) {
+        const child = group.children.pop();
+        child.traverse((node) => {
+          if (node.geometry) node.geometry.dispose();
+          if (node.material) {
+            const materials = Array.isArray(node.material) ? node.material : [node.material];
+            materials.forEach((material) => material.dispose());
+          }
+        });
+      }
+    }
+
+    createAstronaut(scale = 0.72) {
+      return createAstronaut(scale);
+    }
+
+    update(dt) {
+      const backdrop = this.environment.children.find((child) => child.geometry?.type === 'SphereGeometry');
+      if (backdrop && !this.planet?.hasSolidSurface) backdrop.rotation.y += dt * 0.025;
+    }
+}
