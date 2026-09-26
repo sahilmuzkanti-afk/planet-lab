@@ -149,3 +149,100 @@ export class ExperimentController {
       const earthTime = calculateFallTime(height, earth.gravity);
       const planetTime = calculateFallTime(height, this.planet.gravity);
       this.runtime = { kind: 'drop', t: 0, height, earthObject, planetObject, earthTime, planetTime, duration: Math.max(earthTime, planetTime) };
+      this.active = true;
+    }
+
+    setupJump(settings) {
+      const speed = Math.max(0.5, settings.jumpSpeed);
+      const earthAstronaut = this.lab.createAstronaut(0.65);
+      const planetAstronaut = this.lab.createAstronaut(0.65);
+      this.lab.getStage('earth').add(earthAstronaut);
+      this.lab.getStage('planet').add(planetAstronaut);
+      const earthTime = calculateJumpDuration(speed, earth.gravity);
+      const planetTime = calculateJumpDuration(speed, this.planet.gravity);
+      this.runtime = {
+        kind: 'jump', t: 0, speed, earthAstronaut, planetAstronaut,
+        earthTime, planetTime, earthHeight: calculateJumpHeight(speed, earth.gravity),
+        planetHeight: calculateJumpHeight(speed, this.planet.gravity), duration: Math.max(earthTime, planetTime)
+      };
+      this.active = true;
+    }
+
+    setupThrow(settings) {
+      const speed = Math.max(1, settings.speed);
+      const angle = Math.max(5, Math.min(85, settings.angle));
+      const earthBall = createObject('basketball', 0.8);
+      const planetBall = createObject('basketball', 0.8);
+      earthBall.position.set(-2.4, 0.3, 0);
+      planetBall.position.set(-2.4, 0.3, 0);
+      this.lab.getStage('earth').add(earthBall);
+      this.lab.getStage('planet').add(planetBall);
+      const earthRange = calculateProjectileRange(speed, angle, earth.gravity);
+      const planetRange = calculateProjectileRange(speed, angle, this.planet.gravity);
+      const earthHeight = calculateProjectileHeight(speed, angle, earth.gravity);
+      const planetHeight = calculateProjectileHeight(speed, angle, this.planet.gravity);
+      const earthTime = calculateProjectileFlightTime(speed, angle, earth.gravity);
+      const planetTime = calculateProjectileFlightTime(speed, angle, this.planet.gravity);
+      const maxRange = Math.max(earthRange, planetRange, 1);
+      const maxHeight = Math.max(earthHeight, planetHeight, 1);
+      const xScale = 4.8 / maxRange;
+      const yScale = 3.6 / maxHeight;
+      this.lab.getStage('earth').add(this.trajectory(speed, angle, earth.gravity, earthTime, xScale, yScale));
+      this.lab.getStage('planet').add(this.trajectory(speed, angle, this.planet.gravity, planetTime, xScale, yScale));
+      this.runtime = {
+        kind: 'throw', t: 0, speed, angle, earthBall, planetBall, earthRange, planetRange, earthHeight, planetHeight,
+        earthTime, planetTime, xScale, yScale, duration: Math.max(earthTime, planetTime)
+      };
+      this.active = true;
+    }
+
+    trajectory(speed, angle, gravity, flightTime, xScale, yScale) {
+      const points = [];
+      for (let i = 0; i <= 48; i += 1) {
+        const time = flightTime * i / 48;
+        const p = calculateProjectilePosition(speed, angle, time, gravity);
+        points.push(new THREE.Vector3(-2.4 + p.x * xScale, 0.3 + p.y * yScale, 0));
+      }
+      return createTrajectory(points);
+    }
+
+    setupWeight(settings) {
+      const massKg = Math.max(1, settings.mass);
+      const earthWeight = calculateWeight(massKg, earth.gravity);
+      const planetWeight = calculateWeight(massKg, this.planet.gravity);
+      const boxMaterial = material(0x777c82);
+      const earthBox = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.1, 1.1), boxMaterial.clone());
+      const planetBox = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.1, 1.1), boxMaterial.clone());
+      earthBox.position.y = 0.55;
+      planetBox.position.y = 0.55;
+      this.lab.getStage('earth').add(earthBox);
+      this.lab.getStage('planet').add(planetBox);
+      this.addForceGauge(this.lab.getStage('earth'), earthWeight, Math.max(earthWeight, planetWeight));
+      this.addForceGauge(this.lab.getStage('planet'), planetWeight, Math.max(earthWeight, planetWeight));
+      this.ui.setResults([
+        ['Mass on both worlds', `${massKg.toFixed(1)} kg`],
+        ['Earth weight', `${earthWeight.toFixed(1)} N`],
+        [`${this.planet.displayName} weight`, `${planetWeight.toFixed(1)} N`],
+        ['Difference', `${(planetWeight - earthWeight).toFixed(1)} N`]
+      ]);
+      this.ui.setStatus('Complete. Mass stayed the same; weight changed with gravity.');
+      this.ui.setRunEnabled(true);
+    }
+
+    addForceGauge(stage, force, maximum) {
+      const frame = new THREE.Mesh(new THREE.BoxGeometry(0.18, 3.6, 0.18), material(0x43484f));
+      frame.position.set(1.25, 1.8, 0);
+      stage.add(frame);
+      const marker = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.08, 0.28), material(0xd8d7d0));
+      marker.position.set(1.25, 0.2 + 3.2 * force / Math.max(maximum, 1), 0.05);
+      stage.add(marker);
+    }
+
+    setupPendulum(settings) {
+      const length = Math.max(0.2, settings.length);
+      const earthPendulum = createPendulum();
+      const planetPendulum = createPendulum();
+      this.lab.getStage('earth').add(earthPendulum.support, earthPendulum.pivot);
+      this.lab.getStage('planet').add(planetPendulum.support, planetPendulum.pivot);
+      const earthPeriod = calculatePendulumPeriod(length, earth.gravity);
+      const planetPeriod = calculatePendulumPeriod(length, this.planet.gravity);
