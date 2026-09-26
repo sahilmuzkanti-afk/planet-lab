@@ -5,6 +5,7 @@ import { PlanetViewScene } from './planet-view.js';
 import { PlanetLabScene } from './planet-lab.js';
 import { ExperimentController } from './experiments.js';
 import { UI } from './ui.js';
+import { applyAlphaTexture, applyColorTexture, keepTextureFallback, loadColorTexture } from './textures.js';
 
 const STATES = {
   LANDING: 'LANDING',
@@ -91,30 +92,34 @@ function createLandingScene() {
   const clouds = new THREE.Mesh(new THREE.SphereGeometry(4.25, 72, 54), cloudMaterial);
   clouds.name = 'landing-clouds';
   earth.add(clouds);
-  loaderClouds();
-  function loaderClouds() {
-    const cloudLoader = new THREE.TextureLoader();
-    cloudLoader.load(planets[2].clouds, (texture) => {
-      cloudMaterial.alphaMap = texture;
-      cloudMaterial.needsUpdate = true;
-    }, undefined, () => { clouds.visible = false; });
-  }
-  let resolveReady;
-  const ready = new Promise((resolve) => { resolveReady = resolve; });
   const loader = new THREE.TextureLoader();
   loader.load(
+    planets[2].clouds,
+    (texture) => applyAlphaTexture(cloudMaterial, texture),
+    undefined,
+    () => { clouds.visible = false; }
+  );
+  let resolveReady;
+  let readySettled = false;
+  const ready = new Promise((resolve) => {
+    resolveReady = () => {
+      if (readySettled) return;
+      readySettled = true;
+      resolve();
+    };
+  });
+  window.setTimeout(resolveReady, 8000);
+  loadColorTexture(
+    loader,
     planets[2].texture,
     (texture) => {
-      texture.colorSpace = THREE.SRGBColorSpace;
-      material.map = texture;
-      material.color.set(0xffffff);
-      material.needsUpdate = true;
+      applyColorTexture(material, texture);
       resolveReady();
     },
-    (event) => {
-      if (event.total) ui.showLoading(18 + (event.loaded / event.total) * 60);
-    },
-    () => resolveReady()
+    () => {
+      keepTextureFallback(material, earth, 'earth');
+      resolveReady();
+    }
   );
   return {
     scene,

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { planets } from './planets.js';
-import { applyAlphaTexture, applyColorTexture, loadColorTexture } from './textures.js';
+import { applyAlphaTexture, applyColorTexture, keepTextureFallback, loadColorTexture } from './textures.js';
 
 function starField(count = 2200, radius = 120) {
     const positions = new Float32Array(count * 3);
@@ -47,7 +47,7 @@ export class SolarSystemScene {
         this.textureLoader,
         'https://edu.solarsystemscope.com/textures/download/2k_sun.jpg',
         (texture) => applyColorTexture(material, texture),
-        () => {}
+        () => keepTextureFallback(material, sun, 'sun')
       );
     }
 
@@ -72,7 +72,7 @@ export class SolarSystemScene {
             texture.anisotropy = 4;
             applyColorTexture(material, texture);
           },
-          () => {}
+          () => keepTextureFallback(material, mesh, planet.name)
         );
         if (planet.name === 'saturn') this.addRings(mesh, planet);
         if (planet.name === 'earth') this.addEarthLayers(mesh, planet);
@@ -119,7 +119,7 @@ export class SolarSystemScene {
           applyColorTexture(material, texture);
           material.alphaMap = texture;
         },
-        () => {}
+        () => keepTextureFallback(material, ring, 'saturn rings')
       );
     }
 
