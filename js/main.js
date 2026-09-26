@@ -204,3 +204,99 @@ function explorePlanet() {
     complete() {
       detail.setPlanet(selectedPlanet);
       state = STATES.PLANET_VIEW;
+      activeScene = detail.scene;
+      activeUpdater = detail;
+      detail.enter(camera);
+      ui.showDetail(selectedPlanet);
+      interactionLocked = false;
+    }
+  };
+}
+
+function backToSolar() {
+  if (interactionLocked || state !== STATES.PLANET_VIEW) return;
+  swapScene(() => {
+    state = STATES.SOLAR_SYSTEM;
+    activeScene = solar.scene;
+    activeUpdater = solar;
+    solar.enter(camera);
+    ui.showSolar(selectedPlanet, solar.selectedIndex, planets.length);
+  });
+}
+
+function enterLab() {
+  if (interactionLocked || state !== STATES.PLANET_VIEW) return;
+  interactionLocked = true;
+  ui.show(null);
+  const startZ = camera.position.z;
+  transition = {
+    elapsed: 0,
+    duration: 1.65,
+    update(t) {
+      const eased = easeInOutCubic(t);
+      camera.position.z = THREE.MathUtils.lerp(startZ, 4.3, eased);
+      camera.position.y = THREE.MathUtils.lerp(0.3, -0.25, eased);
+      camera.lookAt(1.6, -0.3, 0);
+    },
+    complete() {
+      lab.setPlanet(selectedPlanet);
+      experiments.setPlanet(selectedPlanet);
+      state = STATES.PLANET_LAB;
+      activeScene = lab.scene;
+      activeUpdater = lab;
+      lab.enter(camera);
+      ui.showLab(selectedPlanet);
+      interactionLocked = false;
+    }
+  };
+}
+
+function backToPlanet() {
+  if (interactionLocked || state !== STATES.PLANET_LAB) return;
+  swapScene(() => {
+    detail.setPlanet(selectedPlanet);
+    state = STATES.PLANET_VIEW;
+    activeScene = detail.scene;
+    activeUpdater = detail;
+    detail.enter(camera);
+    ui.showDetail(selectedPlanet);
+  });
+}
+
+function openExperiment(name) {
+  if (interactionLocked || state !== STATES.PLANET_LAB) return;
+  lab.setExperimentMode(true);
+  experiments.setPlanet(selectedPlanet);
+  experiments.open(name);
+  state = STATES.EXPERIMENT;
+  ui.showExperiment(name, selectedPlanet);
+}
+
+function backToLab() {
+  if (interactionLocked || state !== STATES.EXPERIMENT) return;
+  experiments.reset();
+  lab.setExperimentMode(false);
+  state = STATES.PLANET_LAB;
+  ui.showLab(selectedPlanet);
+}
+
+function returnHome() {
+  if (interactionLocked || state !== STATES.SOLAR_SYSTEM) return;
+  swapScene(() => {
+    state = STATES.LANDING;
+    activeScene = landing.scene;
+    activeUpdater = landing;
+    landing.enter(camera);
+    ui.showLanding();
+  });
+}
+
+function swapScene(change) {
+  interactionLocked = true;
+  ui.transition(true);
+  window.setTimeout(() => {
+    change();
+    window.setTimeout(() => {
+      ui.transition(false);
+      interactionLocked = false;
+    }, 90);
