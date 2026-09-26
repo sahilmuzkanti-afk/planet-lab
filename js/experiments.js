@@ -343,3 +343,88 @@ export class ExperimentController {
       const r = this.runtime;
       const move = (mesh, gravity, flightTime) => {
         const p = calculateProjectilePosition(r.speed, r.angle, Math.min(r.t, flightTime), gravity);
+        mesh.position.x = -2.4 + p.x * r.xScale;
+        mesh.position.y = 0.3 + p.y * r.yScale;
+      };
+      move(r.earthBall, earth.gravity, r.earthTime);
+      move(r.planetBall, this.planet.gravity, r.planetTime);
+      if (r.t >= r.duration + 0.15) {
+        this.complete([
+          ['Earth range', `${r.earthRange.toFixed(2)} m`],
+          ['Earth max height', `${r.earthHeight.toFixed(2)} m`],
+          [`${this.planet.displayName} range`, `${r.planetRange.toFixed(2)} m`],
+          [`${this.planet.displayName} max height`, `${r.planetHeight.toFixed(2)} m`]
+        ]);
+      }
+    }
+
+    updatePendulum() {
+      const r = this.runtime;
+      r.earthPendulum.pivot.rotation.z = 0.48 * Math.cos(2 * Math.PI * r.t / r.earthPeriod);
+      r.planetPendulum.pivot.rotation.z = 0.48 * Math.cos(2 * Math.PI * r.t / r.planetPeriod);
+      if (r.t >= r.duration) {
+        this.complete([
+          ['Earth period', `${r.earthPeriod.toFixed(2)} s`],
+          [`${this.planet.displayName} period`, `${r.planetPeriod.toFixed(2)} s`],
+          ['Pendulum length', `${r.length.toFixed(2)} m`]
+        ]);
+      }
+    }
+
+    updateLaunch() {
+      const r = this.runtime;
+      const earthRate = earth.escapeVelocity / Math.max(earth.escapeVelocity, this.planet.escapeVelocity);
+      const planetRate = this.planet.escapeVelocity / Math.max(earth.escapeVelocity, this.planet.escapeVelocity);
+      r.earthCraft.position.y = 0.2 + Math.min(5.8, r.t * 1.4 * earthRate);
+      r.planetCraft.position.y = 0.2 + Math.min(5.8, r.t * 1.4 * planetRate);
+      if (r.t >= r.duration) {
+        this.complete([
+          ['Earth escape velocity', `${earth.escapeVelocity.toFixed(2)} km/s`],
+          [`${this.planet.displayName} escape velocity`, `${this.planet.escapeVelocity.toFixed(2)} km/s`],
+          ['Difference', `${(this.planet.escapeVelocity - earth.escapeVelocity >= 0 ? '+' : '')}${(this.planet.escapeVelocity - earth.escapeVelocity).toFixed(2)} km/s`]
+        ]);
+      }
+    }
+
+    updateFeather(dt) {
+      const r = this.runtime;
+      const simDelta = Math.min(0.12, dt * r.speedFactor);
+      const substeps = Math.max(1, Math.ceil(simDelta / (1 / 120)));
+      const h = simDelta / substeps;
+      for (let step = 0; step < substeps; step += 1) {
+        r.simTime += h;
+        this.integrateDragPair(r.states.earth, earth, h, r.height);
+        this.integrateDragPair(r.states.planet, this.planet, h, r.height);
+      }
+      const allDone = Object.values(r.states).every((pair) => pair.feather.done && pair.hammer.done);
+      if (allDone || r.simTime >= r.duration + 0.5) {
+        this.complete([
+          ['Earth feather', `${r.times['earth-feather'].toFixed(2)} s`],
+          ['Earth hammer', `${r.times['earth-hammer'].toFixed(2)} s`],
+          [`${this.planet.displayName} feather`, `${r.times['planet-feather'].toFixed(2)} s`],
+          [`${this.planet.displayName} hammer`, `${r.times['planet-hammer'].toFixed(2)} s`]
+        ], 'Complete. Air resistance changes the feather most; in a vacuum both share the same gravitational acceleration.');
+      }
+    }
+
+    integrateDragPair(pair, planet, dt, height) {
+      ['feather', 'hammer'].forEach((key) => {
+        const state = pair[key];
+        if (state.done) return;
+        const data = OBJECTS[key];
+      const drag = calculateDragForce(planet.atmosphericDensity, state.velocity, data.dragCoefficient, data.area);
+      const acceleration = Math.max(-planet.gravity, planet.gravity - drag / data.mass);
+      state.velocity = Math.max(0, state.velocity + acceleration * dt);
+      state.y = Math.max(0, state.y - state.velocity * dt);
+      state.mesh.position.y = 0.28 + 5 * state.y / height;
+      if (state.y <= 0) state.done = true;
+    });
+  }
+
+  complete(rows, status = 'Complete.') {
+    this.active = false;
+    this.ui.setRunEnabled(true);
+    this.ui.setStatus(status);
+    this.ui.setResults(rows);
+  }
+}
