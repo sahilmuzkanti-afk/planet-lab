@@ -300,3 +300,59 @@ function swapScene(change) {
       ui.transition(false);
       interactionLocked = false;
     }, 90);
+  }, 250);
+}
+
+function easeInOutCubic(t) {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
+window.addEventListener('wheel', (event) => {
+  if (state !== STATES.SOLAR_SYSTEM || interactionLocked) return;
+  const now = performance.now();
+  if (now - lastWheelTime < 250 || Math.abs(event.deltaY) < 4) return;
+  lastWheelTime = now;
+  movePlanet(event.deltaY > 0 ? 1 : -1);
+}, { passive: true });
+
+window.addEventListener('keydown', (event) => {
+  if (interactionLocked) return;
+  if (state === STATES.SOLAR_SYSTEM) {
+    if (event.key === 'ArrowRight') movePlanet(1);
+    if (event.key === 'ArrowLeft') movePlanet(-1);
+    if (event.key === 'Enter') explorePlanet();
+  } else if (state === STATES.PLANET_VIEW && event.key === 'Escape') {
+    backToSolar();
+  } else if (state === STATES.PLANET_LAB && event.key === 'Escape') {
+    backToPlanet();
+  } else if (state === STATES.EXPERIMENT && event.key === 'Escape') {
+    backToLab();
+  }
+});
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight, false);
+});
+
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 0.05);
+  if (transition) {
+    transition.elapsed += dt;
+    const t = Math.min(1, transition.elapsed / transition.duration);
+    transition.update(t);
+    if (t >= 1) {
+      const done = transition.complete;
+      transition = null;
+      done();
+    }
+  }
+  if (activeUpdater) activeUpdater.update(dt);
+  if (state === STATES.EXPERIMENT) experiments.update(dt);
+  renderer.render(activeScene, camera);
+}
+
+animate();
