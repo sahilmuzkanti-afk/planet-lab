@@ -155,3 +155,46 @@ export class UI {
       }
       if (name === 'pendulum') {
         return `<div class="setting wide"><label for="pendulum-length">Pendulum length</label><input id="pendulum-length" type="number" min="0.2" max="5" step="0.1" value="1"></div>`;
+      }
+      if (name === 'launch') {
+        return `<div class="setting wide"><label>Simulation</label><select id="launch-mode"><option>Reference-level escape velocity</option></select></div>`;
+      }
+      return `<div class="setting wide"><label for="feather-height">Drop height</label><select id="feather-height"><option value="10">10 m</option><option value="20" selected>20 m</option><option value="50">50 m</option></select></div>`;
+    }
+
+    readSettings() {
+      const value = (id, fallback) => {
+        const element = document.getElementById(id);
+        return element ? element.value : fallback;
+      };
+      return {
+        object: value('drop-object', 'bowling'),
+        height: Number(value(this.currentExperiment === 'feather' ? 'feather-height' : 'drop-height', 20)),
+        jumpSpeed: Number(value('jump-speed', 3)),
+        speed: Number(value('throw-speed', 15)),
+        angle: Number(value('throw-angle', 45)),
+        mass: Number(value('mass-value', 70)),
+        length: Number(value('pendulum-length', 1))
+      };
+    }
+
+    setStatus(text) {
+      this.status.textContent = text;
+    }
+
+    setResults(rows) {
+      this.results.innerHTML = rows.map(([label, value]) => `<div class="result-row"><span>${label}</span><b>${value}</b></div>`).join('');
+    }
+
+    clearResults() {
+      this.results.innerHTML = '';
+    }
+
+    setRunEnabled(enabled) {
+      document.getElementById('run-test').disabled = !enabled;
+    }
+
+    transition(active) {
+      this.transitionShade.classList.toggle('active', active);
+    }
+}
