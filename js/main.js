@@ -107,3 +107,100 @@ function createLandingScene() {
     (texture) => {
       texture.colorSpace = THREE.SRGBColorSpace;
       material.map = texture;
+      material.color.set(0xffffff);
+      material.needsUpdate = true;
+      resolveReady();
+    },
+    (event) => {
+      if (event.total) ui.showLoading(18 + (event.loaded / event.total) * 60);
+    },
+    () => resolveReady()
+  );
+  return {
+    scene,
+    earth,
+    stars,
+    ready,
+    enter(targetCamera) {
+      earth.scale.setScalar(1);
+      targetCamera.position.set(0, 0.5, 8.8);
+      targetCamera.fov = 46;
+      targetCamera.updateProjectionMatrix();
+      targetCamera.lookAt(1.7, -0.7, 0);
+    },
+    update(dt) {
+      earth.rotation.y += dt * 0.035;
+      clouds.rotation.y += dt * 0.018;
+      stars.rotation.y += dt * 0.0015;
+    }
+  };
+}
+
+function createStars(count, radius) {
+  const positions = new Float32Array(count * 3);
+  for (let i = 0; i < count; i += 1) {
+    const r = radius * (0.5 + Math.random() * 0.5);
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.acos(2 * Math.random() - 1);
+    positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+    positions[i * 3 + 1] = r * Math.cos(phi);
+    positions[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta);
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  return new THREE.Points(geometry, new THREE.PointsMaterial({ color: 0xc0c5cb, size: 0.09, sizeAttenuation: true }));
+}
+
+function startJourney() {
+  if (interactionLocked || state !== STATES.LANDING) return;
+  interactionLocked = true;
+  ui.show(null);
+  const startZ = camera.position.z;
+  transition = {
+    elapsed: 0,
+    duration: 2.1,
+    update(t) {
+      const eased = easeInOutCubic(t);
+      camera.position.z = THREE.MathUtils.lerp(startZ, 19, eased);
+      camera.position.x = THREE.MathUtils.lerp(0, -0.5, eased);
+      landing.earth.scale.setScalar(THREE.MathUtils.lerp(1, 0.48, eased));
+      camera.lookAt(1.7, -0.7, 0);
+    },
+    complete() {
+      state = STATES.SOLAR_SYSTEM;
+      activeScene = solar.scene;
+      activeUpdater = solar;
+      solar.enter(camera);
+      selectedPlanet = solar.getSelectedPlanet();
+      ui.showSolar(selectedPlanet, solar.selectedIndex, planets.length);
+      interactionLocked = false;
+    }
+  };
+}
+
+function movePlanet(direction) {
+  if (interactionLocked || state !== STATES.SOLAR_SYSTEM) return;
+  if (direction > 0) solar.next();
+  else solar.previous();
+}
+
+function explorePlanet() {
+  if (interactionLocked || state !== STATES.SOLAR_SYSTEM) return;
+  interactionLocked = true;
+  selectedPlanet = solar.getSelectedPlanet();
+  ui.show(null);
+  const startZ = camera.position.z;
+  const startFov = camera.fov;
+  transition = {
+    elapsed: 0,
+    duration: 1.55,
+    update(t) {
+      const eased = easeInOutCubic(t);
+      camera.position.z = THREE.MathUtils.lerp(startZ, 4.2, eased);
+      camera.fov = THREE.MathUtils.lerp(startFov, 39, eased);
+      camera.updateProjectionMatrix();
+      camera.lookAt(0, 0, 0);
+    },
+    complete() {
+      detail.setPlanet(selectedPlanet);
+      state = STATES.PLANET_VIEW;
