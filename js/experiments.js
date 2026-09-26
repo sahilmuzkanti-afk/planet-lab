@@ -246,3 +246,100 @@ export class ExperimentController {
       this.lab.getStage('planet').add(planetPendulum.support, planetPendulum.pivot);
       const earthPeriod = calculatePendulumPeriod(length, earth.gravity);
       const planetPeriod = calculatePendulumPeriod(length, this.planet.gravity);
+      this.runtime = { kind: 'pendulum', t: 0, length, earthPendulum, planetPendulum, earthPeriod, planetPeriod, duration: 8 };
+      this.active = true;
+    }
+
+    setupLaunch() {
+      const earthCraft = createSpacecraft();
+      const planetCraft = createSpacecraft();
+      earthCraft.position.set(0, 0.2, 0);
+      planetCraft.position.set(0, 0.2, 0);
+      this.lab.getStage('earth').add(earthCraft);
+      this.lab.getStage('planet').add(planetCraft);
+      this.runtime = { kind: 'launch', t: 0, earthCraft, planetCraft, duration: 4.5 };
+      this.active = true;
+    }
+
+    setupFeather(settings) {
+      const height = Math.max(1, settings.height);
+      const sides = [
+        { key: 'earth', planet: earth, stage: this.lab.getStage('earth') },
+        { key: 'planet', planet: this.planet, stage: this.lab.getStage('planet') }
+      ];
+      const states = {};
+      const times = {};
+      sides.forEach(({ key, planet, stage }) => {
+        states[key] = {};
+        ['feather', 'hammer'].forEach((objectKey, index) => {
+          const mesh = createObject(objectKey, objectKey === 'feather' ? 1.15 : 1);
+          mesh.position.set(index === 0 ? -0.7 : 0.7, 5.25, 0);
+          stage.add(mesh);
+          states[key][objectKey] = { mesh, y: height, velocity: 0, done: false };
+          const data = OBJECTS[objectKey];
+          times[`${key}-${objectKey}`] = simulateDragFall({
+            height,
+            gravity: planet.gravity,
+            density: planet.atmosphericDensity,
+            mass: data.mass,
+            dragCoefficient: data.dragCoefficient,
+            area: data.area,
+            dt: 1 / 240
+          }).time;
+        });
+      });
+      const maxTime = Math.max(...Object.values(times));
+      this.runtime = { kind: 'feather', t: 0, height, states, times, simTime: 0, speedFactor: Math.max(1, maxTime / 7.5), duration: maxTime };
+      this.active = true;
+    }
+
+    update(dt) {
+      if (!this.active || !this.runtime) return;
+      this.runtime.t += dt;
+      const handlers = {
+        drop: () => this.updateDrop(),
+        jump: () => this.updateJump(),
+        throw: () => this.updateThrow(),
+        pendulum: () => this.updatePendulum(),
+        launch: () => this.updateLaunch(),
+        feather: () => this.updateFeather(dt)
+      };
+      handlers[this.runtime.kind]();
+    }
+
+    updateDrop() {
+      const r = this.runtime;
+      const setY = (mesh, gravity, landingTime) => {
+        const y = calculateDropPosition(r.height, Math.min(r.t, landingTime), gravity);
+        mesh.position.y = 0.28 + 5 * y / r.height;
+      };
+      setY(r.earthObject, earth.gravity, r.earthTime);
+      setY(r.planetObject, this.planet.gravity, r.planetTime);
+      if (r.t >= r.duration + 0.15) {
+        this.complete([
+          ['Earth fall time', `${r.earthTime.toFixed(2)} s`],
+          [`${this.planet.displayName} fall time`, `${r.planetTime.toFixed(2)} s`],
+          ['Difference', `${(r.planetTime - r.earthTime >= 0 ? '+' : '')}${(r.planetTime - r.earthTime).toFixed(2)} s`]
+        ]);
+      }
+    }
+
+    updateJump() {
+      const r = this.runtime;
+      const visualScale = 1.7;
+      r.earthAstronaut.position.y = calculateJumpPosition(r.speed, Math.min(r.t, r.earthTime), earth.gravity) * visualScale;
+      r.planetAstronaut.position.y = calculateJumpPosition(r.speed, Math.min(r.t, r.planetTime), this.planet.gravity) * visualScale;
+      if (r.t >= r.duration + 0.15) {
+        this.complete([
+          ['Earth max height', `${r.earthHeight.toFixed(2)} m`],
+          ['Earth air time', `${r.earthTime.toFixed(2)} s`],
+          [`${this.planet.displayName} max height`, `${r.planetHeight.toFixed(2)} m`],
+          [`${this.planet.displayName} air time`, `${r.planetTime.toFixed(2)} s`]
+        ]);
+      }
+    }
+
+    updateThrow() {
+      const r = this.runtime;
+      const move = (mesh, gravity, flightTime) => {
+        const p = calculateProjectilePosition(r.speed, r.angle, Math.min(r.t, flightTime), gravity);
