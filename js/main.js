@@ -6,7 +6,7 @@ import { PlanetLabScene } from './planet-lab.js';
 import { ExperimentController } from './experiments.js';
 import { UI } from './ui.js';
 import { applyAlphaTexture, applyColorTexture, keepTextureFallback, loadColorTexture } from './textures.js';
-import { placeCamera } from './camera.js';
+import { placeCamera, resizeRenderer } from './camera.js';
 
 const STATES = {
   LANDING: 'LANDING',
@@ -18,13 +18,12 @@ const STATES = {
 
 const canvas = document.getElementById('space-canvas');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.setSize(window.innerWidth, window.innerHeight, false);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.02;
 
 const camera = new THREE.PerspectiveCamera(46, window.innerWidth / window.innerHeight, 0.1, 240);
+resizeRenderer(renderer, camera, window.innerWidth, window.innerHeight, window.devicePixelRatio);
 const clock = new THREE.Clock();
 let state = STATES.LANDING;
 let selectedPlanet = planets[2];
@@ -417,12 +416,12 @@ document.addEventListener('visibilitychange', () => {
   if (!document.hidden) clock.getDelta();
 });
 
-window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.setSize(window.innerWidth, window.innerHeight, false);
+const shell = document.getElementById('game-shell');
+const resizeObserver = new ResizeObserver((entries) => {
+  const box = entries[0].contentRect;
+  resizeRenderer(renderer, camera, box.width, box.height, window.devicePixelRatio);
 });
+resizeObserver.observe(shell);
 
 function animate() {
   requestAnimationFrame(animate);
