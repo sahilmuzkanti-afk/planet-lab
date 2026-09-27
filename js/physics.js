@@ -127,7 +127,20 @@ export function calculateLaunchHeight(elapsed, duration, rate, maximumHeight = 5
 }
 
 export function calculateDragForce(density, velocity, dragCoefficient, area) {
-    return 0.5 * density * velocity * velocity * dragCoefficient * area;
+    if (![density, velocity, dragCoefficient, area].every(Number.isFinite)) return 0;
+    if (density <= 0 || dragCoefficient <= 0 || area <= 0) return 0;
+    return 0.5 * density * velocity * Math.abs(velocity) * dragCoefficient * area;
+}
+
+export function integrateDragStep(state, planet, object, dt) {
+    if (!Number.isFinite(dt) || dt <= 0 || state.y <= 0) return { ...state, fraction: 0 };
+    const drag = calculateDragForce(planet.density, state.velocity, object.dragCoefficient, object.area);
+    const acceleration = planet.gravity - drag / object.mass;
+    const velocity = Math.max(0, state.velocity + acceleration * dt);
+    const distance = (state.velocity + velocity) * 0.5 * dt;
+    const y = Math.max(0, state.y - distance);
+    const fraction = y === 0 && distance > 0 ? Math.min(1, state.y / distance) : 1;
+    return { y, velocity, fraction };
 }
 
 export function simulateDragFall({ height, gravity, density, mass, dragCoefficient, area, dt = 1 / 120 }) {
@@ -136,11 +149,15 @@ export function simulateDragFall({ height, gravity, density, mass, dragCoefficie
     let time = 0;
     const maxTime = 120;
     while (y > 0 && time < maxTime) {
-      const drag = calculateDragForce(density, velocity, dragCoefficient, area);
-      const acceleration = gravity - drag / mass;
-      velocity = Math.max(0, velocity + acceleration * dt);
-      y = Math.max(0, y - velocity * dt);
-      time += dt;
+      const next = integrateDragStep(
+        { y, velocity },
+        { gravity, density },
+        { mass, dragCoefficient, area },
+        dt
+      );
+      y = next.y;
+      velocity = next.velocity;
+      time += dt * next.fraction;
     }
     return { time, velocity };
 }

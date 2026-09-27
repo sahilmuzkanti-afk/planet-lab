@@ -17,7 +17,7 @@ import {
     calculateJumpPosition,
     calculatePendulumPeriod,
     calculatePendulumAngle,
-    calculateDragForce,
+    integrateDragStep,
     simulateDragFall,
     calculateEscapeVelocityKmS,
     calculateLaunchHeight
@@ -438,10 +438,14 @@ export class ExperimentController {
         const state = pair[key];
         if (state.done) return;
         const data = OBJECTS[key];
-      const drag = calculateDragForce(planet.atmosphericDensity, state.velocity, data.dragCoefficient, data.area);
-      const acceleration = Math.max(-planet.gravity, planet.gravity - drag / data.mass);
-      state.velocity = Math.max(0, state.velocity + acceleration * dt);
-      state.y = Math.max(0, state.y - state.velocity * dt);
+      const next = integrateDragStep(
+        state,
+        { gravity: planet.gravity, density: planet.atmosphericDensity },
+        data,
+        dt
+      );
+      state.velocity = next.velocity;
+      state.y = next.y;
       state.mesh.position.y = 0.28 + 5 * state.y / height;
       if (state.y <= 0) state.done = true;
     });
