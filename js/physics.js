@@ -18,7 +18,17 @@ export function calculateImpactSpeed(height, gravity) {
 }
 
 export function calculateWeight(mass, gravity) {
+    if (!Number.isFinite(mass) || !Number.isFinite(gravity) || mass < 0 || gravity < 0) return 0;
     return mass * gravity;
+}
+
+export function calculateMassFromWeight(weight, gravity) {
+    if (!Number.isFinite(weight) || !Number.isFinite(gravity) || weight < 0 || gravity <= 0) return 0;
+    return weight / gravity;
+}
+
+export function calculateWeightDifference(mass, firstGravity, secondGravity) {
+    return calculateWeight(mass, secondGravity) - calculateWeight(mass, firstGravity);
 }
 
 export function calculateProjectileVelocity(speed, angleDegrees) {
