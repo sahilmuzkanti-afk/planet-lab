@@ -46,15 +46,24 @@ export function calculateProjectileHeight(speed, angleDegrees, gravity) {
 }
 
 export function calculateJumpHeight(initialVelocity, gravity) {
+    if (!Number.isFinite(initialVelocity) || !Number.isFinite(gravity) || initialVelocity <= 0 || gravity <= 0) return 0;
     return (initialVelocity * initialVelocity) / (2 * gravity);
 }
 
 export function calculateJumpDuration(initialVelocity, gravity) {
+    if (!Number.isFinite(initialVelocity) || !Number.isFinite(gravity) || initialVelocity <= 0 || gravity <= 0) return 0;
     return (2 * initialVelocity) / gravity;
 }
 
+export function calculateJumpApexTime(initialVelocity, gravity) {
+    return calculateJumpDuration(initialVelocity, gravity) / 2;
+}
+
 export function calculateJumpPosition(initialVelocity, time, gravity) {
-    return Math.max(0, initialVelocity * time - 0.5 * gravity * time * time);
+    if (![initialVelocity, time, gravity].every(Number.isFinite)) return 0;
+    if (initialVelocity <= 0 || gravity <= 0) return 0;
+    const elapsed = Math.max(0, time);
+    return Math.max(0, initialVelocity * elapsed - 0.5 * gravity * elapsed * elapsed);
 }
 
 export function calculatePendulumPeriod(length, gravity) {

@@ -11,11 +11,13 @@ import {
     calculateProjectileFlightTime,
     calculateJumpHeight,
     calculateJumpDuration,
+    calculateJumpApexTime,
     calculateJumpPosition,
     calculatePendulumPeriod,
     calculateDragForce,
     simulateDragFall
 } from './physics.js';
+import { playbackRate, playbackTime } from './motion.js';
 
 const OBJECTS = {
     bowling: { mass: 6.8, dragCoefficient: 0.47, area: 0.038, shape: 'sphere', color: 0x222428 },
@@ -151,10 +153,11 @@ export class ExperimentController {
       const planetTime = calculateFallTime(height, this.planet.gravity);
       const earthImpact = calculateImpactSpeed(height, earth.gravity);
       const planetImpact = calculateImpactSpeed(height, this.planet.gravity);
+      const duration = Math.max(earthTime, planetTime);
       this.runtime = {
         kind: 'drop', t: 0, height, earthObject, planetObject,
         earthTime, planetTime, earthImpact, planetImpact,
-        duration: Math.max(earthTime, planetTime)
+        duration, playbackRate: playbackRate(duration)
       };
       this.active = true;
     }
@@ -170,7 +173,10 @@ export class ExperimentController {
       this.runtime = {
         kind: 'jump', t: 0, speed, earthAstronaut, planetAstronaut,
         earthTime, planetTime, earthHeight: calculateJumpHeight(speed, earth.gravity),
-        planetHeight: calculateJumpHeight(speed, this.planet.gravity), duration: Math.max(earthTime, planetTime)
+        planetHeight: calculateJumpHeight(speed, this.planet.gravity),
+        earthApex: calculateJumpApexTime(speed, earth.gravity),
+        planetApex: calculateJumpApexTime(speed, this.planet.gravity),
+        duration: Math.max(earthTime, planetTime)
       };
       this.active = true;
     }
@@ -316,13 +322,14 @@ export class ExperimentController {
 
     updateDrop() {
       const r = this.runtime;
+      const elapsed = playbackTime(r.t, r.playbackRate, r.duration);
       const setY = (mesh, gravity, landingTime) => {
-        const y = calculateDropPosition(r.height, Math.min(r.t, landingTime), gravity);
+        const y = calculateDropPosition(r.height, Math.min(elapsed, landingTime), gravity);
         mesh.position.y = 0.28 + 5 * y / r.height;
       };
       setY(r.earthObject, earth.gravity, r.earthTime);
       setY(r.planetObject, this.planet.gravity, r.planetTime);
-      if (r.t >= r.duration + 0.15) {
+      if (elapsed >= r.duration && r.t >= r.duration / r.playbackRate + 0.15) {
         this.complete([
           ['Earth fall time', `${r.earthTime.toFixed(2)} s`],
           [`${this.planet.displayName} fall time`, `${r.planetTime.toFixed(2)} s`],
@@ -342,8 +349,10 @@ export class ExperimentController {
         this.complete([
           ['Earth max height', `${r.earthHeight.toFixed(2)} m`],
           ['Earth air time', `${r.earthTime.toFixed(2)} s`],
+          ['Earth time to apex', `${r.earthApex.toFixed(2)} s`],
           [`${this.planet.displayName} max height`, `${r.planetHeight.toFixed(2)} m`],
-          [`${this.planet.displayName} air time`, `${r.planetTime.toFixed(2)} s`]
+          [`${this.planet.displayName} air time`, `${r.planetTime.toFixed(2)} s`],
+          [`${this.planet.displayName} time to apex`, `${r.planetApex.toFixed(2)} s`]
         ]);
       }
     }
