@@ -142,19 +142,20 @@ export class SolarSystemScene {
     }
 
     setSelectedIndex(index) {
-      this.targetIndex = Math.max(0, Math.min(planets.length - 1, index));
-      if (this.targetIndex !== this.selectedIndex) {
-        this.selectedIndex = this.targetIndex;
-        if (this.onSelectionChange) this.onSelectionChange(this.getSelectedPlanet(), this.selectedIndex);
-      }
+      const nextIndex = Math.max(0, Math.min(planets.length - 1, Math.round(index)));
+      if (nextIndex === this.selectedIndex) return false;
+      this.targetIndex = nextIndex;
+      this.selectedIndex = nextIndex;
+      if (this.onSelectionChange) this.onSelectionChange(this.getSelectedPlanet(), this.selectedIndex);
+      return true;
     }
 
     next() {
-      this.setSelectedIndex(this.selectedIndex + 1);
+      return this.setSelectedIndex(this.selectedIndex + 1);
     }
 
     previous() {
-      this.setSelectedIndex(this.selectedIndex - 1);
+      return this.setSelectedIndex(this.selectedIndex - 1);
     }
 
     getSelectedPlanet() {

@@ -32,6 +32,8 @@ let activeUpdater;
 let transition = null;
 let interactionLocked = true;
 let lastWheelTime = 0;
+let wheelDistance = 0;
+let pointerStart = null;
 
 const ui = new UI({
   startJourney,
@@ -189,6 +191,11 @@ function movePlanet(direction) {
   else solar.previous();
 }
 
+function selectPlanet(index) {
+  if (interactionLocked || state !== STATES.SOLAR_SYSTEM) return;
+  solar.setSelectedIndex(index);
+}
+
 function explorePlanet() {
   if (interactionLocked || state !== STATES.SOLAR_SYSTEM) return;
   interactionLocked = true;
@@ -314,18 +321,37 @@ function easeInOutCubic(t) {
 
 window.addEventListener('wheel', (event) => {
   if (state !== STATES.SOLAR_SYSTEM || interactionLocked) return;
+  const unit = event.deltaMode === WheelEvent.DOM_DELTA_LINE ? 16 : event.deltaMode === WheelEvent.DOM_DELTA_PAGE ? window.innerHeight : 1;
+  wheelDistance += event.deltaY * unit;
+  if (Math.abs(wheelDistance) < 40) return;
   const now = performance.now();
-  if (now - lastWheelTime < 250 || Math.abs(event.deltaY) < 4) return;
+  if (now - lastWheelTime < 250) return;
   lastWheelTime = now;
-  movePlanet(event.deltaY > 0 ? 1 : -1);
+  movePlanet(wheelDistance > 0 ? 1 : -1);
+  wheelDistance = 0;
 }, { passive: true });
 
 window.addEventListener('keydown', (event) => {
-  if (interactionLocked) return;
+  const target = event.target;
+  if (interactionLocked || event.repeat || target instanceof HTMLInputElement || target instanceof HTMLSelectElement) return;
   if (state === STATES.SOLAR_SYSTEM) {
-    if (event.key === 'ArrowRight') movePlanet(1);
-    if (event.key === 'ArrowLeft') movePlanet(-1);
-    if (event.key === 'Enter') explorePlanet();
+    if (event.key === 'ArrowRight') {
+      event.preventDefault();
+      movePlanet(1);
+    }
+    if (event.key === 'ArrowLeft') {
+      event.preventDefault();
+      movePlanet(-1);
+    }
+    if (event.key === 'Home') {
+      event.preventDefault();
+      selectPlanet(0);
+    }
+    if (event.key === 'End') {
+      event.preventDefault();
+      selectPlanet(planets.length - 1);
+    }
+    if (event.key === 'Enter' && target === document.body) explorePlanet();
   } else if (state === STATES.PLANET_VIEW && event.key === 'Escape') {
     backToSolar();
   } else if (state === STATES.PLANET_LAB && event.key === 'Escape') {
@@ -333,6 +359,34 @@ window.addEventListener('keydown', (event) => {
   } else if (state === STATES.EXPERIMENT && event.key === 'Escape') {
     backToLab();
   }
+});
+
+canvas.addEventListener('pointerdown', (event) => {
+  if (state !== STATES.SOLAR_SYSTEM || interactionLocked) return;
+  pointerStart = { id: event.pointerId, x: event.clientX, y: event.clientY };
+  canvas.setPointerCapture(event.pointerId);
+});
+
+canvas.addEventListener('pointerup', (event) => {
+  if (!pointerStart || pointerStart.id !== event.pointerId) return;
+  const dx = event.clientX - pointerStart.x;
+  const dy = event.clientY - pointerStart.y;
+  pointerStart = null;
+  if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
+  if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)) movePlanet(dx < 0 ? 1 : -1);
+});
+
+canvas.addEventListener('pointercancel', () => {
+  pointerStart = null;
+});
+
+canvas.addEventListener('lostpointercapture', () => {
+  pointerStart = null;
+});
+
+window.addEventListener('blur', () => {
+  pointerStart = null;
+  wheelDistance = 0;
 });
 
 window.addEventListener('resize', () => {
