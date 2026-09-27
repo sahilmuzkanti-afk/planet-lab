@@ -7,6 +7,7 @@ import { ExperimentController } from './experiments.js';
 import { UI } from './ui.js';
 import { applyAlphaTexture, applyColorTexture, keepTextureFallback, loadColorTexture } from './textures.js';
 import { placeCamera, resizeRenderer } from './camera.js';
+import { isExperimentName } from './experiment-types.js';
 
 const STATES = {
   LANDING: 'LANDING',
@@ -280,7 +281,7 @@ function backToPlanet() {
 }
 
 function openExperiment(name) {
-  if (interactionLocked || state !== STATES.PLANET_LAB) return;
+  if (interactionLocked || state !== STATES.PLANET_LAB || !isExperimentName(name)) return;
   lab.setExperimentMode(true);
   experiments.setPlanet(selectedPlanet);
   experiments.open(name);

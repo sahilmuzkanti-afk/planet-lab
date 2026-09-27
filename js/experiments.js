@@ -23,6 +23,7 @@ import {
     calculateLaunchHeight
 } from './physics.js';
 import { playbackRate, playbackTime } from './motion.js';
+import { isExperimentName } from './experiment-types.js';
 
 const OBJECTS = {
     bowling: { mass: 6.8, dragCoefficient: 0.47, area: 0.038, shape: 'sphere', color: 0x222428 },
@@ -118,8 +119,10 @@ export class ExperimentController {
     }
 
     open(name) {
+      if (!isExperimentName(name)) return false;
       this.current = name;
       this.reset();
+      return true;
     }
 
     reset() {
@@ -146,8 +149,15 @@ export class ExperimentController {
         launch: () => this.setupLaunch(settings),
         feather: () => this.setupFeather(settings)
       };
-      actions[this.current]();
+      const action = actions[this.current];
+      if (!action) {
+        this.ui.setRunEnabled(true);
+        this.ui.setStatus('Choose an experiment.');
+        return false;
+      }
+      action();
       if (this.runtime) this.runtime.runVersion = runVersion;
+      return true;
     }
 
     setupDrop(settings) {
@@ -164,7 +174,7 @@ export class ExperimentController {
       const planetImpact = calculateImpactSpeed(height, this.planet.gravity);
       const duration = Math.max(earthTime, planetTime);
       this.runtime = {
-        kind: 'drop', t: 0, height, earthObject, planetObject,
+        kind: 'drop', t: 0, planet: this.planet, height, earthObject, planetObject,
         earthTime, planetTime, earthImpact, planetImpact,
         duration, playbackRate: playbackRate(duration)
       };
@@ -180,7 +190,7 @@ export class ExperimentController {
       const earthTime = calculateJumpDuration(speed, earth.gravity);
       const planetTime = calculateJumpDuration(speed, this.planet.gravity);
       this.runtime = {
-        kind: 'jump', t: 0, speed, earthAstronaut, planetAstronaut,
+        kind: 'jump', t: 0, planet: this.planet, speed, earthAstronaut, planetAstronaut,
         earthTime, planetTime, earthHeight: calculateJumpHeight(speed, earth.gravity),
         planetHeight: calculateJumpHeight(speed, this.planet.gravity),
         earthApex: calculateJumpApexTime(speed, earth.gravity),
@@ -213,7 +223,7 @@ export class ExperimentController {
       this.lab.getStage('planet').add(this.trajectory(speed, angle, this.planet.gravity, xScale, yScale));
       const duration = Math.max(earthTime, planetTime);
       this.runtime = {
-        kind: 'throw', t: 0, speed, angle, earthBall, planetBall, earthRange, planetRange, earthHeight, planetHeight,
+        kind: 'throw', t: 0, planet: this.planet, speed, angle, earthBall, planetBall, earthRange, planetRange, earthHeight, planetHeight,
         earthTime, planetTime, xScale, yScale, duration, playbackRate: playbackRate(duration)
       };
       this.active = true;
@@ -267,7 +277,7 @@ export class ExperimentController {
       const amplitude = 0.48;
       const earthPeriod = calculatePendulumPeriod(length, earth.gravity, amplitude);
       const planetPeriod = calculatePendulumPeriod(length, this.planet.gravity, amplitude);
-      this.runtime = { kind: 'pendulum', t: 0, length, amplitude, earthPendulum, planetPendulum, earthPeriod, planetPeriod, duration: 8 };
+      this.runtime = { kind: 'pendulum', t: 0, planet: this.planet, length, amplitude, earthPendulum, planetPendulum, earthPeriod, planetPeriod, duration: 8 };
       this.active = true;
     }
 
@@ -280,7 +290,7 @@ export class ExperimentController {
       this.lab.getStage('planet').add(planetCraft);
       const earthSpeed = calculateEscapeVelocityKmS(earth.mass, earth.radius);
       const planetSpeed = calculateEscapeVelocityKmS(this.planet.mass, this.planet.radius);
-      this.runtime = { kind: 'launch', t: 0, earthCraft, planetCraft, earthSpeed, planetSpeed, duration: 4.5 };
+      this.runtime = { kind: 'launch', t: 0, planet: this.planet, earthCraft, planetCraft, earthSpeed, planetSpeed, duration: 4.5 };
       this.active = true;
     }
 
@@ -312,7 +322,7 @@ export class ExperimentController {
         });
       });
       const maxTime = Math.max(...Object.values(times));
-      this.runtime = { kind: 'feather', t: 0, height, states, times, simTime: 0, speedFactor: Math.max(1, maxTime / 7.5), duration: maxTime };
+      this.runtime = { kind: 'feather', t: 0, planet: this.planet, height, states, times, simTime: 0, speedFactor: Math.max(1, maxTime / 7.5), duration: maxTime };
       this.active = true;
     }
 
@@ -342,13 +352,13 @@ export class ExperimentController {
         mesh.position.y = 0.28 + 5 * y / r.height;
       };
       setY(r.earthObject, earth.gravity, r.earthTime);
-      setY(r.planetObject, this.planet.gravity, r.planetTime);
+      setY(r.planetObject, r.planet.gravity, r.planetTime);
       if (elapsed >= r.duration && r.t >= r.duration / r.playbackRate + 0.15) {
         this.complete([
           ['Earth fall time', `${r.earthTime.toFixed(2)} s`],
-          [`${this.planet.displayName} fall time`, `${r.planetTime.toFixed(2)} s`],
+          [`${r.planet.displayName} fall time`, `${r.planetTime.toFixed(2)} s`],
           ['Earth impact speed', `${r.earthImpact.toFixed(2)} m/s`],
-          [`${this.planet.displayName} impact speed`, `${r.planetImpact.toFixed(2)} m/s`],
+          [`${r.planet.displayName} impact speed`, `${r.planetImpact.toFixed(2)} m/s`],
           ['Difference', `${(r.planetTime - r.earthTime >= 0 ? '+' : '')}${(r.planetTime - r.earthTime).toFixed(2)} s`]
         ]);
       }
@@ -358,15 +368,15 @@ export class ExperimentController {
       const r = this.runtime;
       const visualScale = 1.7;
       r.earthAstronaut.position.y = calculateJumpPosition(r.speed, Math.min(r.t, r.earthTime), earth.gravity) * visualScale;
-      r.planetAstronaut.position.y = calculateJumpPosition(r.speed, Math.min(r.t, r.planetTime), this.planet.gravity) * visualScale;
+      r.planetAstronaut.position.y = calculateJumpPosition(r.speed, Math.min(r.t, r.planetTime), r.planet.gravity) * visualScale;
       if (r.t >= r.duration + 0.15) {
         this.complete([
           ['Earth max height', `${r.earthHeight.toFixed(2)} m`],
           ['Earth air time', `${r.earthTime.toFixed(2)} s`],
           ['Earth time to apex', `${r.earthApex.toFixed(2)} s`],
-          [`${this.planet.displayName} max height`, `${r.planetHeight.toFixed(2)} m`],
-          [`${this.planet.displayName} air time`, `${r.planetTime.toFixed(2)} s`],
-          [`${this.planet.displayName} time to apex`, `${r.planetApex.toFixed(2)} s`]
+          [`${r.planet.displayName} max height`, `${r.planetHeight.toFixed(2)} m`],
+          [`${r.planet.displayName} air time`, `${r.planetTime.toFixed(2)} s`],
+          [`${r.planet.displayName} time to apex`, `${r.planetApex.toFixed(2)} s`]
         ]);
       }
     }
@@ -380,13 +390,13 @@ export class ExperimentController {
         mesh.position.y = 0.3 + p.y * r.yScale;
       };
       move(r.earthBall, earth.gravity, r.earthTime);
-      move(r.planetBall, this.planet.gravity, r.planetTime);
+      move(r.planetBall, r.planet.gravity, r.planetTime);
       if (elapsed >= r.duration && r.t >= r.duration / r.playbackRate + 0.15) {
         this.complete([
           ['Earth range', `${r.earthRange.toFixed(2)} m`],
           ['Earth max height', `${r.earthHeight.toFixed(2)} m`],
-          [`${this.planet.displayName} range`, `${r.planetRange.toFixed(2)} m`],
-          [`${this.planet.displayName} max height`, `${r.planetHeight.toFixed(2)} m`]
+          [`${r.planet.displayName} range`, `${r.planetRange.toFixed(2)} m`],
+          [`${r.planet.displayName} max height`, `${r.planetHeight.toFixed(2)} m`]
         ]);
       }
     }
@@ -398,7 +408,7 @@ export class ExperimentController {
       if (r.t >= r.duration) {
         this.complete([
           ['Earth period', `${r.earthPeriod.toFixed(2)} s`],
-          [`${this.planet.displayName} period`, `${r.planetPeriod.toFixed(2)} s`],
+          [`${r.planet.displayName} period`, `${r.planetPeriod.toFixed(2)} s`],
           ['Pendulum length', `${r.length.toFixed(2)} m`]
         ]);
       }
@@ -414,7 +424,7 @@ export class ExperimentController {
       if (r.t >= r.duration) {
         this.complete([
           ['Earth escape velocity', `${r.earthSpeed.toFixed(2)} km/s`],
-          [`${this.planet.displayName} escape velocity`, `${r.planetSpeed.toFixed(2)} km/s`],
+          [`${r.planet.displayName} escape velocity`, `${r.planetSpeed.toFixed(2)} km/s`],
           ['Difference', `${(r.planetSpeed - r.earthSpeed >= 0 ? '+' : '')}${(r.planetSpeed - r.earthSpeed).toFixed(2)} km/s`]
         ]);
       }
@@ -428,15 +438,15 @@ export class ExperimentController {
       for (let step = 0; step < substeps; step += 1) {
         r.simTime += h;
         this.integrateDragPair(r.states.earth, earth, h, r.height);
-        this.integrateDragPair(r.states.planet, this.planet, h, r.height);
+        this.integrateDragPair(r.states.planet, r.planet, h, r.height);
       }
       const allDone = Object.values(r.states).every((pair) => pair.feather.done && pair.hammer.done);
       if (allDone || r.simTime >= r.duration + 0.5) {
         this.complete([
           ['Earth feather', `${r.times['earth-feather'].toFixed(2)} s`],
           ['Earth hammer', `${r.times['earth-hammer'].toFixed(2)} s`],
-          [`${this.planet.displayName} feather`, `${r.times['planet-feather'].toFixed(2)} s`],
-          [`${this.planet.displayName} hammer`, `${r.times['planet-hammer'].toFixed(2)} s`]
+          [`${r.planet.displayName} feather`, `${r.times['planet-feather'].toFixed(2)} s`],
+          [`${r.planet.displayName} hammer`, `${r.times['planet-hammer'].toFixed(2)} s`]
         ], 'Complete. Air resistance changes the feather most; in a vacuum both share the same gravitational acceleration.');
       }
     }
