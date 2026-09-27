@@ -162,21 +162,52 @@ export class UI {
       return `<div class="setting wide"><label for="feather-height">Drop height</label><select id="feather-height"><option value="10">10 m</option><option value="20" selected>20 m</option><option value="50">50 m</option></select></div>`;
     }
 
-    readSettings() {
-      const value = (id, fallback) => {
-        const element = document.getElementById(id);
-        return element ? element.value : fallback;
-      };
-      return {
-        object: value('drop-object', 'bowling'),
-        height: Number(value(this.currentExperiment === 'feather' ? 'feather-height' : 'drop-height', 20)),
-        jumpSpeed: Number(value('jump-speed', 3)),
-        speed: Number(value('throw-speed', 15)),
-        angle: Number(value('throw-angle', 45)),
-        mass: Number(value('mass-value', 70)),
-        length: Number(value('pendulum-length', 1))
-      };
+  readSettings() {
+    return {
+      object: this.readChoice('drop-object', 'bowling'),
+      height: this.readNumber(this.currentExperiment === 'feather' ? 'feather-height' : 'drop-height', 20),
+      jumpSpeed: this.readNumber('jump-speed', 3),
+      speed: this.readNumber('throw-speed', 15),
+      angle: this.readNumber('throw-angle', 45),
+      mass: this.readNumber('mass-value', 70),
+      length: this.readNumber('pendulum-length', 1)
+    };
+  }
+
+  readChoice(id, fallback) {
+    const element = document.getElementById(id);
+    if (!(element instanceof HTMLSelectElement)) return fallback;
+    const option = Array.from(element.options).find((item) => item.value === element.value);
+    return option ? option.value : fallback;
+  }
+
+  readNumber(id, fallback) {
+    const element = document.getElementById(id);
+    if (!(element instanceof HTMLInputElement || element instanceof HTMLSelectElement)) return fallback;
+    const parsed = element instanceof HTMLInputElement ? element.valueAsNumber : Number(element.value);
+    if (!Number.isFinite(parsed)) {
+      element.setAttribute('aria-invalid', 'true');
+      element.value = String(fallback);
+      return fallback;
     }
+    const hasRange = element instanceof HTMLInputElement;
+    const minimum = hasRange && element.min !== '' ? Number(element.min) : -Infinity;
+    const maximum = hasRange && element.max !== '' ? Number(element.max) : Infinity;
+    let value = Math.min(maximum, Math.max(minimum, parsed));
+    if (element instanceof HTMLInputElement && element.step !== '' && element.step !== 'any') {
+      const step = Number(element.step);
+      if (Number.isFinite(step) && step > 0) {
+        const base = Number.isFinite(minimum) ? minimum : 0;
+        value = base + Math.round((value - base) / step) * step;
+        const decimals = (element.step.split('.')[1] || '').length;
+        value = Number(value.toFixed(decimals));
+        value = Math.min(maximum, Math.max(minimum, value));
+      }
+    }
+    element.removeAttribute('aria-invalid');
+    element.value = String(value);
+    return value;
+  }
 
     setStatus(text) {
       this.status.textContent = text;

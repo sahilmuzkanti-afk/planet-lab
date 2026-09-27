@@ -362,25 +362,37 @@ window.addEventListener('keydown', (event) => {
 });
 
 canvas.addEventListener('pointerdown', (event) => {
-  if (state !== STATES.SOLAR_SYSTEM || interactionLocked) return;
-  pointerStart = { id: event.pointerId, x: event.clientX, y: event.clientY };
+  if (state !== STATES.SOLAR_SYSTEM || interactionLocked || !event.isPrimary || event.button !== 0) return;
+  pointerStart = {
+    id: event.pointerId,
+    x: event.clientX,
+    y: event.clientY,
+    time: performance.now()
+  };
   canvas.setPointerCapture(event.pointerId);
+});
+
+canvas.addEventListener('pointermove', (event) => {
+  if (!pointerStart || pointerStart.id !== event.pointerId) return;
+  const dx = event.clientX - pointerStart.x;
+  const dy = event.clientY - pointerStart.y;
+  if (Math.abs(dy) > 60 && Math.abs(dy) > Math.abs(dx)) {
+    pointerStart = null;
+    canvas.releasePointerCapture(event.pointerId);
+  }
 });
 
 canvas.addEventListener('pointerup', (event) => {
   if (!pointerStart || pointerStart.id !== event.pointerId) return;
   const dx = event.clientX - pointerStart.x;
   const dy = event.clientY - pointerStart.y;
+  const elapsed = performance.now() - pointerStart.time;
   pointerStart = null;
   if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
-  if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)) movePlanet(dx < 0 ? 1 : -1);
+  if (elapsed <= 800 && Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)) movePlanet(dx < 0 ? 1 : -1);
 });
 
 canvas.addEventListener('pointercancel', () => {
-  pointerStart = null;
-});
-
-canvas.addEventListener('lostpointercapture', () => {
   pointerStart = null;
 });
 
