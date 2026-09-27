@@ -25,5 +25,10 @@ export function disposeObject(object) {
 }
 
 export function clearGroup(group) {
-  while (group.children.length) disposeObject(group.children[0]);
+  let removed = 0;
+  while (group.children.length) {
+    disposeObject(group.children[0]);
+    removed += 1;
+  }
+  return removed;
 }

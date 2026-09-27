@@ -110,6 +110,7 @@ export class ExperimentController {
       this.current = 'drop';
       this.active = false;
       this.runtime = null;
+      this.runVersion = 0;
     }
 
     setPlanet(planet) {
@@ -122,6 +123,7 @@ export class ExperimentController {
     }
 
     reset() {
+      this.runVersion += 1;
       this.active = false;
       this.runtime = null;
       this.lab.clearExperimentVisuals();
@@ -132,6 +134,7 @@ export class ExperimentController {
 
     run(settings) {
       this.reset();
+      const runVersion = this.runVersion;
       this.ui.setRunEnabled(false);
       this.ui.setStatus('Running...');
       const actions = {
@@ -144,6 +147,7 @@ export class ExperimentController {
         feather: () => this.setupFeather(settings)
       };
       actions[this.current]();
+      if (this.runtime) this.runtime.runVersion = runVersion;
     }
 
     setupDrop(settings) {
@@ -314,6 +318,10 @@ export class ExperimentController {
 
     update(dt) {
       if (!this.active || !this.runtime) return;
+      if (this.runtime.runVersion !== this.runVersion) {
+        this.reset();
+        return;
+      }
       this.runtime.t += dt;
       const handlers = {
         drop: () => this.updateDrop(),
@@ -452,6 +460,7 @@ export class ExperimentController {
   }
 
   complete(rows, status = 'Complete.') {
+    if (!this.runtime || this.runtime.runVersion !== this.runVersion) return;
     this.active = false;
     this.ui.setRunEnabled(true);
     this.ui.setStatus(status);
