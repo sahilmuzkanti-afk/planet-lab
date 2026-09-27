@@ -22,3 +22,15 @@ export function playbackTime(elapsed, rate, duration) {
   if (![elapsed, rate, duration].every(Number.isFinite)) return 0;
   return Math.min(Math.max(0, duration), Math.max(0, elapsed) * Math.max(0, rate));
 }
+
+export function boundedDelta(delta, maximum = 1 / 20) {
+  if (!Number.isFinite(delta) || delta <= 0) return 0;
+  if (!Number.isFinite(maximum) || maximum <= 0) return 0;
+  return Math.min(delta, maximum);
+}
+
+export function substepCount(delta, step = 1 / 120, maximum = 24) {
+  if (![delta, step, maximum].every(Number.isFinite)) return 1;
+  if (delta <= 0 || step <= 0 || maximum < 1) return 1;
+  return Math.min(Math.floor(maximum), Math.max(1, Math.ceil(delta / step)));
+}

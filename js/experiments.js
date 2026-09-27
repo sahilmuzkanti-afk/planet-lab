@@ -22,7 +22,7 @@ import {
     calculateEscapeVelocityKmS,
     calculateLaunchHeight
 } from './physics.js';
-import { playbackRate, playbackTime } from './motion.js';
+import { playbackRate, playbackTime, substepCount } from './motion.js';
 import { isExperimentName } from './experiment-types.js';
 
 const OBJECTS = {
@@ -333,15 +333,15 @@ export class ExperimentController {
         return;
       }
       this.runtime.t += dt;
-      const handlers = {
-        drop: () => this.updateDrop(),
-        jump: () => this.updateJump(),
-        throw: () => this.updateThrow(),
-        pendulum: () => this.updatePendulum(),
-        launch: () => this.updateLaunch(),
-        feather: () => this.updateFeather(dt)
-      };
-      handlers[this.runtime.kind]();
+      switch (this.runtime.kind) {
+        case 'drop': this.updateDrop(); break;
+        case 'jump': this.updateJump(); break;
+        case 'throw': this.updateThrow(); break;
+        case 'pendulum': this.updatePendulum(); break;
+        case 'launch': this.updateLaunch(); break;
+        case 'feather': this.updateFeather(dt); break;
+        default: this.reset();
+      }
     }
 
     updateDrop() {
@@ -433,7 +433,7 @@ export class ExperimentController {
     updateFeather(dt) {
       const r = this.runtime;
       const simDelta = Math.min(0.12, dt * r.speedFactor);
-      const substeps = Math.max(1, Math.ceil(simDelta / (1 / 120)));
+      const substeps = substepCount(simDelta);
       const h = simDelta / substeps;
       for (let step = 0; step < substeps; step += 1) {
         r.simTime += h;
