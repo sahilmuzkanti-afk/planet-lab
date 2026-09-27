@@ -112,7 +112,18 @@ export function calculatePendulumAngle(amplitude, time, period) {
 }
 
 export function calculateEscapeVelocity(mass, radiusMeters) {
+    if (!Number.isFinite(mass) || !Number.isFinite(radiusMeters) || mass <= 0 || radiusMeters <= 0) return 0;
     return Math.sqrt((2 * G * mass) / radiusMeters);
+}
+
+export function calculateEscapeVelocityKmS(mass, radiusKilometers) {
+    return calculateEscapeVelocity(mass, radiusKilometers * 1000) / 1000;
+}
+
+export function calculateLaunchHeight(elapsed, duration, rate, maximumHeight = 5.8) {
+    if (![elapsed, duration, rate, maximumHeight].every(Number.isFinite)) return 0;
+    if (duration <= 0 || rate <= 0 || maximumHeight <= 0) return 0;
+    return Math.min(maximumHeight, maximumHeight * Math.max(0, elapsed) * rate / duration);
 }
 
 export function calculateDragForce(density, velocity, dragCoefficient, area) {

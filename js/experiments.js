@@ -18,7 +18,9 @@ import {
     calculatePendulumPeriod,
     calculatePendulumAngle,
     calculateDragForce,
-    simulateDragFall
+    simulateDragFall,
+    calculateEscapeVelocityKmS,
+    calculateLaunchHeight
 } from './physics.js';
 import { playbackRate, playbackTime } from './motion.js';
 
@@ -272,7 +274,9 @@ export class ExperimentController {
       planetCraft.position.set(0, 0.2, 0);
       this.lab.getStage('earth').add(earthCraft);
       this.lab.getStage('planet').add(planetCraft);
-      this.runtime = { kind: 'launch', t: 0, earthCraft, planetCraft, duration: 4.5 };
+      const earthSpeed = calculateEscapeVelocityKmS(earth.mass, earth.radius);
+      const planetSpeed = calculateEscapeVelocityKmS(this.planet.mass, this.planet.radius);
+      this.runtime = { kind: 'launch', t: 0, earthCraft, planetCraft, earthSpeed, planetSpeed, duration: 4.5 };
       this.active = true;
     }
 
@@ -394,15 +398,16 @@ export class ExperimentController {
 
     updateLaunch() {
       const r = this.runtime;
-      const earthRate = earth.escapeVelocity / Math.max(earth.escapeVelocity, this.planet.escapeVelocity);
-      const planetRate = this.planet.escapeVelocity / Math.max(earth.escapeVelocity, this.planet.escapeVelocity);
-      r.earthCraft.position.y = 0.2 + Math.min(5.8, r.t * 1.4 * earthRate);
-      r.planetCraft.position.y = 0.2 + Math.min(5.8, r.t * 1.4 * planetRate);
+      const maximum = Math.max(r.earthSpeed, r.planetSpeed);
+      const earthRate = r.earthSpeed / maximum;
+      const planetRate = r.planetSpeed / maximum;
+      r.earthCraft.position.y = 0.2 + calculateLaunchHeight(r.t, r.duration, earthRate);
+      r.planetCraft.position.y = 0.2 + calculateLaunchHeight(r.t, r.duration, planetRate);
       if (r.t >= r.duration) {
         this.complete([
-          ['Earth escape velocity', `${earth.escapeVelocity.toFixed(2)} km/s`],
-          [`${this.planet.displayName} escape velocity`, `${this.planet.escapeVelocity.toFixed(2)} km/s`],
-          ['Difference', `${(this.planet.escapeVelocity - earth.escapeVelocity >= 0 ? '+' : '')}${(this.planet.escapeVelocity - earth.escapeVelocity).toFixed(2)} km/s`]
+          ['Earth escape velocity', `${r.earthSpeed.toFixed(2)} km/s`],
+          [`${this.planet.displayName} escape velocity`, `${r.planetSpeed.toFixed(2)} km/s`],
+          ['Difference', `${(r.planetSpeed - r.earthSpeed >= 0 ? '+' : '')}${(r.planetSpeed - r.earthSpeed).toFixed(2)} km/s`]
         ]);
       }
     }
