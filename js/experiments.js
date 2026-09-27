@@ -5,6 +5,7 @@ import {
     calculateDropPosition,
     calculateImpactSpeed,
     calculateWeight,
+    calculateWeightDifference,
     calculateProjectilePosition,
     calculateProjectileRange,
     calculateProjectileHeight,
@@ -15,6 +16,7 @@ import {
     calculateJumpApexTime,
     calculateJumpPosition,
     calculatePendulumPeriod,
+    calculatePendulumAngle,
     calculateDragForce,
     simulateDragFall
 } from './physics.js';
@@ -221,6 +223,7 @@ export class ExperimentController {
       const massKg = Math.max(1, settings.mass);
       const earthWeight = calculateWeight(massKg, earth.gravity);
       const planetWeight = calculateWeight(massKg, this.planet.gravity);
+      const difference = calculateWeightDifference(massKg, earth.gravity, this.planet.gravity);
       const boxMaterial = material(0x777c82);
       const earthBox = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.1, 1.1), boxMaterial.clone());
       const planetBox = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.1, 1.1), boxMaterial.clone());
@@ -234,7 +237,7 @@ export class ExperimentController {
         ['Mass on both worlds', `${massKg.toFixed(1)} kg`],
         ['Earth weight', `${earthWeight.toFixed(1)} N`],
         [`${this.planet.displayName} weight`, `${planetWeight.toFixed(1)} N`],
-        ['Difference', `${(planetWeight - earthWeight).toFixed(1)} N`]
+        ['Difference', `${difference.toFixed(1)} N`]
       ]);
       this.ui.setStatus('Complete. Mass stayed the same; weight changed with gravity.');
       this.ui.setRunEnabled(true);
@@ -255,9 +258,10 @@ export class ExperimentController {
       const planetPendulum = createPendulum();
       this.lab.getStage('earth').add(earthPendulum.support, earthPendulum.pivot);
       this.lab.getStage('planet').add(planetPendulum.support, planetPendulum.pivot);
-      const earthPeriod = calculatePendulumPeriod(length, earth.gravity);
-      const planetPeriod = calculatePendulumPeriod(length, this.planet.gravity);
-      this.runtime = { kind: 'pendulum', t: 0, length, earthPendulum, planetPendulum, earthPeriod, planetPeriod, duration: 8 };
+      const amplitude = 0.48;
+      const earthPeriod = calculatePendulumPeriod(length, earth.gravity, amplitude);
+      const planetPeriod = calculatePendulumPeriod(length, this.planet.gravity, amplitude);
+      this.runtime = { kind: 'pendulum', t: 0, length, amplitude, earthPendulum, planetPendulum, earthPeriod, planetPeriod, duration: 8 };
       this.active = true;
     }
 
@@ -377,8 +381,8 @@ export class ExperimentController {
 
     updatePendulum() {
       const r = this.runtime;
-      r.earthPendulum.pivot.rotation.z = 0.48 * Math.cos(2 * Math.PI * r.t / r.earthPeriod);
-      r.planetPendulum.pivot.rotation.z = 0.48 * Math.cos(2 * Math.PI * r.t / r.planetPeriod);
+      r.earthPendulum.pivot.rotation.z = calculatePendulumAngle(r.amplitude, r.t, r.earthPeriod);
+      r.planetPendulum.pivot.rotation.z = calculatePendulumAngle(r.amplitude, r.t, r.planetPeriod);
       if (r.t >= r.duration) {
         this.complete([
           ['Earth period', `${r.earthPeriod.toFixed(2)} s`],

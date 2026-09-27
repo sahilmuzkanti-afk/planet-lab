@@ -99,8 +99,16 @@ export function calculateJumpPosition(initialVelocity, time, gravity) {
     return Math.max(0, initialVelocity * elapsed - 0.5 * gravity * elapsed * elapsed);
 }
 
-export function calculatePendulumPeriod(length, gravity) {
-    return 2 * Math.PI * Math.sqrt(length / gravity);
+export function calculatePendulumPeriod(length, gravity, amplitude = 0) {
+    if (![length, gravity, amplitude].every(Number.isFinite) || length <= 0 || gravity <= 0) return 0;
+    const angle = Math.min(Math.abs(amplitude), Math.PI / 2);
+    const correction = 1 + angle * angle / 16 + 11 * angle ** 4 / 3072;
+    return 2 * Math.PI * Math.sqrt(length / gravity) * correction;
+}
+
+export function calculatePendulumAngle(amplitude, time, period) {
+    if (![amplitude, time, period].every(Number.isFinite) || period <= 0) return 0;
+    return amplitude * Math.cos(2 * Math.PI * Math.max(0, time) / period);
 }
 
 export function calculateEscapeVelocity(mass, radiusMeters) {
