@@ -79,16 +79,23 @@ export class PlanetLabScene {
       this.keyLight = new THREE.DirectionalLight(0xffeed8, 3.3);
       this.keyLight.position.set(-6, 10, 7);
       this.scene.add(this.keyLight);
+      this.loadVersion = 0;
     }
 
     setPlanet(planet) {
+      if (this.planet === planet && this.defaultLab.children.length) {
+        this.clearExperimentVisuals();
+        return false;
+      }
+      const loadVersion = ++this.loadVersion;
       this.planet = planet;
       this.clearGroup(this.environment);
       this.clearGroup(this.defaultLab);
       this.clearExperimentVisuals();
       if (planet.hasSolidSurface) this.buildSurfaceEnvironment(planet);
-      else this.buildOrbitalEnvironment(planet);
+      else this.buildOrbitalEnvironment(planet, loadVersion);
       this.buildDefaultLab(planet);
+      return true;
     }
 
     buildSurfaceEnvironment(planet) {
@@ -124,7 +131,7 @@ export class PlanetLabScene {
       }
     }
 
-    buildOrbitalEnvironment(planet) {
+    buildOrbitalEnvironment(planet, loadVersion) {
       this.scene.background = new THREE.Color(0x050609);
       this.scene.fog.color.set(0x050609);
       const planetMaterial = new THREE.MeshStandardMaterial({ color: planet.surfaceColor, roughness: 0.7 });
@@ -134,8 +141,13 @@ export class PlanetLabScene {
       loadColorTexture(
         this.loader,
         planet.texture,
-        (texture) => applyColorTexture(planetMaterial, texture),
-        () => keepTextureFallback(planetMaterial, backdrop, planet.name)
+        (texture) => {
+          if (loadVersion !== this.loadVersion) return texture.dispose();
+          applyColorTexture(planetMaterial, texture);
+        },
+        () => {
+          if (loadVersion === this.loadVersion) keepTextureFallback(planetMaterial, backdrop, planet.name);
+        }
       );
       const orbitalDeck = createPlatform(15, 8);
       orbitalDeck.position.set(0, -1.5, 0);

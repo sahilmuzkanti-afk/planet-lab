@@ -9,14 +9,18 @@ function disposeMaterial(material) {
 }
 
 export function disposeObject(object) {
+  const geometries = new Set();
+  const materials = new Set();
   object.traverse((node) => {
-    if (node.geometry) node.geometry.dispose();
+    if (node.geometry) geometries.add(node.geometry);
     if (Array.isArray(node.material)) {
-      node.material.forEach(disposeMaterial);
-    } else {
-      disposeMaterial(node.material);
+      node.material.forEach((material) => materials.add(material));
+    } else if (node.material) {
+      materials.add(node.material);
     }
   });
+  geometries.forEach((geometry) => geometry.dispose());
+  materials.forEach(disposeMaterial);
   if (object.parent) object.parent.remove(object);
 }
 

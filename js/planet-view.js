@@ -31,10 +31,14 @@ export class PlanetViewScene {
       this.scene.add(this.planetGroup);
       this.planet = null;
       this.mesh = null;
+      this.loadVersion = 0;
     }
 
     setPlanet(planet) {
+      if (this.planet === planet && this.mesh) return false;
+      const loadVersion = ++this.loadVersion;
       this.planet = planet;
+      this.planetGroup.rotation.z = 0;
       clearGroup(this.planetGroup);
       const radius = planet.name === 'jupiter' ? 2.7 : planet.name === 'saturn' ? 2.45 : Math.max(1.75, 1.95 * planet.scale);
       const material = new THREE.MeshStandardMaterial({ color: planet.surfaceColor, roughness: 0.72 });
@@ -43,8 +47,13 @@ export class PlanetViewScene {
       loadColorTexture(
         this.loader,
         planet.texture,
-        (texture) => applyColorTexture(material, texture),
-        () => keepTextureFallback(material, this.mesh, planet.name)
+        (texture) => {
+          if (loadVersion !== this.loadVersion) return texture.dispose();
+          applyColorTexture(material, texture);
+        },
+        () => {
+          if (loadVersion === this.loadVersion) keepTextureFallback(material, this.mesh, planet.name);
+        }
       );
       if (planet.name === 'saturn') this.addRings(radius, planet);
       if (planet.name === 'earth') {
@@ -59,11 +68,17 @@ export class PlanetViewScene {
         this.planetGroup.add(clouds);
         this.loader.load(
           planet.clouds,
-          (texture) => applyAlphaTexture(cloudMaterial, texture),
+          (texture) => {
+            if (loadVersion !== this.loadVersion) return texture.dispose();
+            applyAlphaTexture(cloudMaterial, texture);
+          },
           undefined,
-          () => { clouds.visible = false; }
+          () => {
+            if (loadVersion === this.loadVersion) clouds.visible = false;
+          }
         );
       }
+      return true;
     }
 
     addRings(radius, planet) {
@@ -71,10 +86,14 @@ export class PlanetViewScene {
       const ring = new THREE.Mesh(new THREE.RingGeometry(radius * 1.25, radius * 2.05, 160), material);
       ring.rotation.x = Math.PI / 2.08;
       this.planetGroup.add(ring);
+      const loadVersion = this.loadVersion;
       loadColorTexture(this.loader, planet.rings, (texture) => {
+        if (loadVersion !== this.loadVersion) return texture.dispose();
         applyColorTexture(material, texture);
         material.alphaMap = texture;
-      }, () => keepTextureFallback(material, ring, 'saturn rings'));
+      }, () => {
+        if (loadVersion === this.loadVersion) keepTextureFallback(material, ring, 'saturn rings');
+      });
     }
 
     enter(camera) {
