@@ -9,6 +9,7 @@ import {
     calculateProjectileRange,
     calculateProjectileHeight,
     calculateProjectileFlightTime,
+    sampleProjectilePath,
     calculateJumpHeight,
     calculateJumpDuration,
     calculateJumpApexTime,
@@ -200,22 +201,19 @@ export class ExperimentController {
       const maxHeight = Math.max(earthHeight, planetHeight, 1);
       const xScale = 4.8 / maxRange;
       const yScale = 3.6 / maxHeight;
-      this.lab.getStage('earth').add(this.trajectory(speed, angle, earth.gravity, earthTime, xScale, yScale));
-      this.lab.getStage('planet').add(this.trajectory(speed, angle, this.planet.gravity, planetTime, xScale, yScale));
+      this.lab.getStage('earth').add(this.trajectory(speed, angle, earth.gravity, xScale, yScale));
+      this.lab.getStage('planet').add(this.trajectory(speed, angle, this.planet.gravity, xScale, yScale));
+      const duration = Math.max(earthTime, planetTime);
       this.runtime = {
         kind: 'throw', t: 0, speed, angle, earthBall, planetBall, earthRange, planetRange, earthHeight, planetHeight,
-        earthTime, planetTime, xScale, yScale, duration: Math.max(earthTime, planetTime)
+        earthTime, planetTime, xScale, yScale, duration, playbackRate: playbackRate(duration)
       };
       this.active = true;
     }
 
-    trajectory(speed, angle, gravity, flightTime, xScale, yScale) {
-      const points = [];
-      for (let i = 0; i <= 48; i += 1) {
-        const time = flightTime * i / 48;
-        const p = calculateProjectilePosition(speed, angle, time, gravity);
-        points.push(new THREE.Vector3(-2.4 + p.x * xScale, 0.3 + p.y * yScale, 0));
-      }
+    trajectory(speed, angle, gravity, xScale, yScale) {
+      const points = sampleProjectilePath(speed, angle, gravity)
+        .map((point) => new THREE.Vector3(-2.4 + point.x * xScale, 0.3 + point.y * yScale, 0));
       return createTrajectory(points);
     }
 
@@ -359,14 +357,15 @@ export class ExperimentController {
 
     updateThrow() {
       const r = this.runtime;
+      const elapsed = playbackTime(r.t, r.playbackRate, r.duration);
       const move = (mesh, gravity, flightTime) => {
-        const p = calculateProjectilePosition(r.speed, r.angle, Math.min(r.t, flightTime), gravity);
+        const p = calculateProjectilePosition(r.speed, r.angle, Math.min(elapsed, flightTime), gravity);
         mesh.position.x = -2.4 + p.x * r.xScale;
         mesh.position.y = 0.3 + p.y * r.yScale;
       };
       move(r.earthBall, earth.gravity, r.earthTime);
       move(r.planetBall, this.planet.gravity, r.planetTime);
-      if (r.t >= r.duration + 0.15) {
+      if (elapsed >= r.duration && r.t >= r.duration / r.playbackRate + 0.15) {
         this.complete([
           ['Earth range', `${r.earthRange.toFixed(2)} m`],
           ['Earth max height', `${r.earthHeight.toFixed(2)} m`],

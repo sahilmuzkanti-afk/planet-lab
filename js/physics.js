@@ -57,6 +57,17 @@ export function calculateProjectileHeight(speed, angleDegrees, gravity) {
     return velocity.y > 0 ? (velocity.y * velocity.y) / (2 * gravity) : 0;
 }
 
+export function sampleProjectilePath(speed, angleDegrees, gravity, segments = 48) {
+    const flightTime = calculateProjectileFlightTime(speed, angleDegrees, gravity);
+    if (flightTime === 0) return [{ x: 0, y: 0 }];
+    const count = Math.max(2, Math.min(200, Math.round(segments) || 48));
+    const points = [];
+    for (let index = 0; index <= count; index += 1) {
+      points.push(calculateProjectilePosition(speed, angleDegrees, flightTime * index / count, gravity));
+    }
+    return points;
+}
+
 export function calculateJumpHeight(initialVelocity, gravity) {
     if (!Number.isFinite(initialVelocity) || !Number.isFinite(gravity) || initialVelocity <= 0 || gravity <= 0) return 0;
     return (initialVelocity * initialVelocity) / (2 * gravity);
