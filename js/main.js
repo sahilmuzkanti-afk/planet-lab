@@ -8,6 +8,8 @@ import { UI } from './ui.js';
 import { applyAlphaTexture, applyColorTexture, keepTextureFallback, loadColorTexture } from './textures.js';
 import { placeCamera, resizeRenderer } from './camera.js';
 import { isExperimentName } from './experiment-types.js';
+import { boundedDelta } from './motion.js';
+import { keyboardAction } from './keyboard.js';
 
 const STATES = {
   LANDING: 'LANDING',
@@ -35,6 +37,7 @@ let interactionLocked = true;
 let lastWheelTime = 0;
 let wheelDistance = 0;
 let pointerStart = null;
+let contextLost = false;
 
 const ui = new UI({
   startJourney,
@@ -345,32 +348,24 @@ window.addEventListener('wheel', (event) => {
 
 window.addEventListener('keydown', (event) => {
   const target = event.target;
-  if (interactionLocked || event.repeat || target instanceof HTMLInputElement || target instanceof HTMLSelectElement) return;
-  if (state === STATES.SOLAR_SYSTEM) {
-    if (event.key === 'ArrowRight') {
-      event.preventDefault();
-      movePlanet(1);
-    }
-    if (event.key === 'ArrowLeft') {
-      event.preventDefault();
-      movePlanet(-1);
-    }
-    if (event.key === 'Home') {
-      event.preventDefault();
-      selectPlanet(0);
-    }
-    if (event.key === 'End') {
-      event.preventDefault();
-      selectPlanet(planets.length - 1);
-    }
-    if (event.key === 'Enter' && target === document.body) explorePlanet();
-  } else if (state === STATES.PLANET_VIEW && event.key === 'Escape') {
-    backToSolar();
-  } else if (state === STATES.PLANET_LAB && event.key === 'Escape') {
-    backToPlanet();
-  } else if (state === STATES.EXPERIMENT && event.key === 'Escape') {
-    backToLab();
-  }
+  if (interactionLocked) return;
+  const action = keyboardAction(state, event.key, {
+    repeat: event.repeat,
+    editing: target instanceof HTMLInputElement || target instanceof HTMLSelectElement,
+    altKey: event.altKey,
+    ctrlKey: event.ctrlKey,
+    metaKey: event.metaKey
+  });
+  if (!action || (action === 'explore' && target !== document.body)) return;
+  event.preventDefault();
+  if (action === 'next') movePlanet(1);
+  else if (action === 'previous') movePlanet(-1);
+  else if (action === 'first') selectPlanet(0);
+  else if (action === 'last') selectPlanet(planets.length - 1);
+  else if (action === 'explore') explorePlanet();
+  else if (action === 'solar') backToSolar();
+  else if (action === 'planet') backToPlanet();
+  else if (action === 'lab') backToLab();
 });
 
 canvas.addEventListener('pointerdown', (event) => {
@@ -418,15 +413,31 @@ document.addEventListener('visibilitychange', () => {
 });
 
 const shell = document.getElementById('game-shell');
-const resizeObserver = new ResizeObserver((entries) => {
-  const box = entries[0].contentRect;
+const resizeToShell = () => {
+  const box = shell.getBoundingClientRect();
   resizeRenderer(renderer, camera, box.width, box.height, window.devicePixelRatio);
+};
+if ('ResizeObserver' in window) {
+  const resizeObserver = new ResizeObserver(resizeToShell);
+  resizeObserver.observe(shell);
+} else {
+  window.addEventListener('resize', resizeToShell);
+}
+
+canvas.addEventListener('webglcontextlost', (event) => {
+  event.preventDefault();
+  contextLost = true;
 });
-resizeObserver.observe(shell);
+
+canvas.addEventListener('webglcontextrestored', () => {
+  contextLost = false;
+  resizeToShell();
+});
 
 function animate() {
   requestAnimationFrame(animate);
-  const dt = Math.min(clock.getDelta(), 1 / 20);
+  const dt = boundedDelta(clock.getDelta());
+  if (document.hidden || contextLost || dt === 0) return;
   if (transition) {
     transition.elapsed += dt;
     const t = Math.min(1, transition.elapsed / transition.duration);

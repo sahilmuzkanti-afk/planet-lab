@@ -81,6 +81,7 @@ export class PlanetLabScene {
       this.keyLight.position.set(-6, 10, 7);
       this.scene.add(this.keyLight);
       this.loadVersion = 0;
+      this.backdrop = null;
     }
 
     setPlanet(planet) {
@@ -91,6 +92,7 @@ export class PlanetLabScene {
       const loadVersion = ++this.loadVersion;
       this.planet = planet;
       this.clearGroup(this.environment);
+      this.backdrop = null;
       this.clearGroup(this.defaultLab);
       this.clearExperimentVisuals();
       if (planet.hasSolidSurface) this.buildSurfaceEnvironment(planet);
@@ -139,6 +141,7 @@ export class PlanetLabScene {
       const backdrop = new THREE.Mesh(new THREE.SphereGeometry(8.5, 64, 48), planetMaterial);
       backdrop.position.set(0, -9.5, -12);
       this.environment.add(backdrop);
+      this.backdrop = backdrop;
       loadColorTexture(
         this.loader,
         planet.texture,
@@ -209,9 +212,8 @@ export class PlanetLabScene {
     }
 
     update(dt) {
-      const backdrop = this.environment.children.find((child) => child.geometry?.type === 'SphereGeometry');
-      if (backdrop && !this.planet?.hasSolidSurface) {
-        backdrop.rotation.y = advanceAngle(backdrop.rotation.y, 0.025, dt);
+      if (this.backdrop && !this.planet?.hasSolidSurface) {
+        this.backdrop.rotation.y = advanceAngle(this.backdrop.rotation.y, 0.025, dt);
       }
     }
 }

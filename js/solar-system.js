@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+﻿import * as THREE from 'three';
 import { planets } from './planets.js';
 import { applyAlphaTexture, applyColorTexture, keepTextureFallback, loadColorTexture } from './textures.js';
 import { placeCamera } from './camera.js';
@@ -47,7 +47,7 @@ export class SolarSystemScene {
       this.group.add(sun);
       loadColorTexture(
         this.textureLoader,
-        'https://edu.solarsystemscope.com/textures/download/2k_sun.jpg',
+        'assets/textures/2k_sun.jpg',
         (texture) => applyColorTexture(material, texture),
         () => keepTextureFallback(material, sun, 'sun')
       );
@@ -182,3 +182,4 @@ export class SolarSystemScene {
       });
     }
 }
+

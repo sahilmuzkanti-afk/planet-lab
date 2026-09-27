@@ -39,9 +39,12 @@ export class UI {
       });
     }
 
-    show(name) {
-      Object.values(this.screens).forEach((screen) => screen.classList.add('hidden'));
-      if (name && this.screens[name]) this.screens[name].classList.remove('hidden');
+  show(name) {
+    Object.entries(this.screens).forEach(([screenName, screen]) => {
+      const visible = screenName === name;
+      screen.classList.toggle('hidden', !visible);
+      screen.setAttribute('aria-hidden', String(!visible));
+    });
     }
 
     showLoading(progress, message = 'Loading Solar System...') {
@@ -218,9 +221,10 @@ export class UI {
       this.results.innerHTML = '';
     }
 
-    setRunEnabled(enabled) {
-      document.getElementById('run-test').disabled = !enabled;
-    }
+  setRunEnabled(enabled) {
+    document.getElementById('run-test').disabled = !enabled;
+    this.screens.experiment.setAttribute('aria-busy', String(!enabled));
+  }
 
     transition(active) {
       this.transitionShade.classList.toggle('active', active);
