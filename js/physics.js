@@ -21,28 +21,40 @@ export function calculateWeight(mass, gravity) {
     return mass * gravity;
 }
 
-export function calculateProjectilePosition(speed, angleDegrees, time, gravity) {
+export function calculateProjectileVelocity(speed, angleDegrees) {
+    if (!Number.isFinite(speed) || !Number.isFinite(angleDegrees) || speed <= 0) return { x: 0, y: 0 };
     const angle = angleDegrees * Math.PI / 180;
     return {
-      x: speed * Math.cos(angle) * time,
-      y: Math.max(0, speed * Math.sin(angle) * time - 0.5 * gravity * time * time)
+      x: speed * Math.cos(angle),
+      y: speed * Math.sin(angle)
+    };
+}
+
+export function calculateProjectilePosition(speed, angleDegrees, time, gravity) {
+    if (!Number.isFinite(time) || !Number.isFinite(gravity) || time < 0 || gravity <= 0) return { x: 0, y: 0 };
+    const velocity = calculateProjectileVelocity(speed, angleDegrees);
+    return {
+      x: velocity.x * time,
+      y: Math.max(0, velocity.y * time - 0.5 * gravity * time * time)
     };
 }
 
 export function calculateProjectileFlightTime(speed, angleDegrees, gravity) {
-    const angle = angleDegrees * Math.PI / 180;
-    return (2 * speed * Math.sin(angle)) / gravity;
+    if (!Number.isFinite(gravity) || gravity <= 0) return 0;
+    const velocity = calculateProjectileVelocity(speed, angleDegrees);
+    return velocity.y > 0 ? (2 * velocity.y) / gravity : 0;
 }
 
 export function calculateProjectileRange(speed, angleDegrees, gravity) {
-    const angle = angleDegrees * Math.PI / 180;
-    return (speed * speed * Math.sin(2 * angle)) / gravity;
+    const velocity = calculateProjectileVelocity(speed, angleDegrees);
+    const flightTime = calculateProjectileFlightTime(speed, angleDegrees, gravity);
+    return Math.max(0, velocity.x * flightTime);
 }
 
 export function calculateProjectileHeight(speed, angleDegrees, gravity) {
-    const angle = angleDegrees * Math.PI / 180;
-    const vertical = speed * Math.sin(angle);
-    return (vertical * vertical) / (2 * gravity);
+    if (!Number.isFinite(gravity) || gravity <= 0) return 0;
+    const velocity = calculateProjectileVelocity(speed, angleDegrees);
+    return velocity.y > 0 ? (velocity.y * velocity.y) / (2 * gravity) : 0;
 }
 
 export function calculateJumpHeight(initialVelocity, gravity) {
