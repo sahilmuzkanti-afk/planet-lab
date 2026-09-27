@@ -6,6 +6,7 @@ import { PlanetLabScene } from './planet-lab.js';
 import { ExperimentController } from './experiments.js';
 import { UI } from './ui.js';
 import { applyAlphaTexture, applyColorTexture, keepTextureFallback, loadColorTexture } from './textures.js';
+import { placeCamera } from './camera.js';
 
 const STATES = {
   LANDING: 'LANDING',
@@ -130,10 +131,7 @@ function createLandingScene() {
     ready,
     enter(targetCamera) {
       earth.scale.setScalar(1);
-      targetCamera.position.set(0, 0.5, 8.8);
-      targetCamera.fov = 46;
-      targetCamera.updateProjectionMatrix();
-      targetCamera.lookAt(1.7, -0.7, 0);
+      placeCamera(targetCamera, [0, 0.5, 8.8], 46, [1.7, -0.7, 0]);
     },
     update(dt) {
       earth.rotation.y += dt * 0.035;
@@ -162,16 +160,18 @@ function startJourney() {
   if (interactionLocked || state !== STATES.LANDING) return;
   interactionLocked = true;
   ui.show(null);
-  const startZ = camera.position.z;
+  const startPosition = camera.position.clone();
+  const startRotation = camera.quaternion.clone();
+  const endPosition = new THREE.Vector3(-0.5, 0.5, 19);
+  const endRotation = rotationFor(endPosition, new THREE.Vector3(1.7, -0.7, 0));
   transition = {
     elapsed: 0,
     duration: 2.1,
     update(t) {
       const eased = easeInOutCubic(t);
-      camera.position.z = THREE.MathUtils.lerp(startZ, 19, eased);
-      camera.position.x = THREE.MathUtils.lerp(0, -0.5, eased);
+      camera.position.lerpVectors(startPosition, endPosition, eased);
+      camera.quaternion.slerpQuaternions(startRotation, endRotation, eased);
       landing.earth.scale.setScalar(THREE.MathUtils.lerp(1, 0.48, eased));
-      camera.lookAt(1.7, -0.7, 0);
     },
     complete() {
       state = STATES.SOLAR_SYSTEM;
@@ -201,17 +201,20 @@ function explorePlanet() {
   interactionLocked = true;
   selectedPlanet = solar.getSelectedPlanet();
   ui.show(null);
-  const startZ = camera.position.z;
+  const startPosition = camera.position.clone();
+  const startRotation = camera.quaternion.clone();
+  const endPosition = new THREE.Vector3(0, 0.3, 4.2);
+  const endRotation = rotationFor(endPosition, new THREE.Vector3(0, 0, 0));
   const startFov = camera.fov;
   transition = {
     elapsed: 0,
     duration: 1.55,
     update(t) {
       const eased = easeInOutCubic(t);
-      camera.position.z = THREE.MathUtils.lerp(startZ, 4.2, eased);
+      camera.position.lerpVectors(startPosition, endPosition, eased);
+      camera.quaternion.slerpQuaternions(startRotation, endRotation, eased);
       camera.fov = THREE.MathUtils.lerp(startFov, 39, eased);
       camera.updateProjectionMatrix();
-      camera.lookAt(0, 0, 0);
     },
     complete() {
       detail.setPlanet(selectedPlanet);
@@ -240,15 +243,17 @@ function enterLab() {
   if (interactionLocked || state !== STATES.PLANET_VIEW) return;
   interactionLocked = true;
   ui.show(null);
-  const startZ = camera.position.z;
+  const startPosition = camera.position.clone();
+  const startRotation = camera.quaternion.clone();
+  const endPosition = new THREE.Vector3(0, -0.25, 4.3);
+  const endRotation = rotationFor(endPosition, new THREE.Vector3(1.6, -0.3, 0));
   transition = {
     elapsed: 0,
     duration: 1.65,
     update(t) {
       const eased = easeInOutCubic(t);
-      camera.position.z = THREE.MathUtils.lerp(startZ, 4.3, eased);
-      camera.position.y = THREE.MathUtils.lerp(0.3, -0.25, eased);
-      camera.lookAt(1.6, -0.3, 0);
+      camera.position.lerpVectors(startPosition, endPosition, eased);
+      camera.quaternion.slerpQuaternions(startRotation, endRotation, eased);
     },
     complete() {
       lab.setPlanet(selectedPlanet);
@@ -317,6 +322,13 @@ function swapScene(change) {
 
 function easeInOutCubic(t) {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
+function rotationFor(position, target) {
+  const probe = camera.clone();
+  probe.position.copy(position);
+  probe.lookAt(target);
+  return probe.quaternion;
 }
 
 window.addEventListener('wheel', (event) => {
@@ -401,6 +413,10 @@ window.addEventListener('blur', () => {
   wheelDistance = 0;
 });
 
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) clock.getDelta();
+});
+
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
@@ -410,7 +426,7 @@ window.addEventListener('resize', () => {
 
 function animate() {
   requestAnimationFrame(animate);
-  const dt = Math.min(clock.getDelta(), 0.05);
+  const dt = Math.min(clock.getDelta(), 1 / 20);
   if (transition) {
     transition.elapsed += dt;
     const t = Math.min(1, transition.elapsed / transition.duration);

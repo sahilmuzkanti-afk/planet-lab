@@ -186,7 +186,6 @@ export class UI {
     if (!(element instanceof HTMLInputElement || element instanceof HTMLSelectElement)) return fallback;
     const parsed = element instanceof HTMLInputElement ? element.valueAsNumber : Number(element.value);
     if (!Number.isFinite(parsed)) {
-      element.setAttribute('aria-invalid', 'true');
       element.value = String(fallback);
       return fallback;
     }
@@ -201,10 +200,8 @@ export class UI {
         value = base + Math.round((value - base) / step) * step;
         const decimals = (element.step.split('.')[1] || '').length;
         value = Number(value.toFixed(decimals));
-        value = Math.min(maximum, Math.max(minimum, value));
       }
     }
-    element.removeAttribute('aria-invalid');
     element.value = String(value);
     return value;
   }

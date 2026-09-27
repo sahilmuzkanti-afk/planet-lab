@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { applyAlphaTexture, applyColorTexture, loadColorTexture } from './textures.js';
+import { applyAlphaTexture, applyColorTexture, keepTextureFallback, loadColorTexture } from './textures.js';
+import { placeCamera } from './camera.js';
 
 function makeStars() {
     const count = 1600;
@@ -46,7 +47,7 @@ export class PlanetViewScene {
         this.loader,
         planet.texture,
         (texture) => applyColorTexture(material, texture),
-        () => {}
+        () => keepTextureFallback(material, this.mesh, planet.name)
       );
       if (planet.name === 'saturn') this.addRings(radius, planet);
       if (planet.name === 'earth') {
@@ -76,14 +77,11 @@ export class PlanetViewScene {
       loadColorTexture(this.loader, planet.rings, (texture) => {
         applyColorTexture(material, texture);
         material.alphaMap = texture;
-      }, () => {});
+      }, () => keepTextureFallback(material, ring, 'saturn rings'));
     }
 
     enter(camera) {
-      camera.position.set(0, 0.3, 9.8);
-      camera.fov = 43;
-      camera.updateProjectionMatrix();
-      camera.lookAt(0.8, 0, 0);
+      placeCamera(camera, [0, 0.3, 9.8], 43, [0.8, 0, 0]);
     }
 
     update(dt) {

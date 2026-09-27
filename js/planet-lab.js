@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { applyColorTexture, loadColorTexture } from './textures.js';
+import { applyColorTexture, keepTextureFallback, loadColorTexture } from './textures.js';
+import { placeCamera } from './camera.js';
 
 function createAstronaut(scale = 1) {
     const group = new THREE.Group();
@@ -133,7 +134,7 @@ export class PlanetLabScene {
         this.loader,
         planet.texture,
         (texture) => applyColorTexture(planetMaterial, texture),
-        () => {}
+        () => keepTextureFallback(planetMaterial, backdrop, planet.name)
       );
       const orbitalDeck = createPlatform(15, 8);
       orbitalDeck.position.set(0, -1.5, 0);
@@ -167,10 +168,7 @@ export class PlanetLabScene {
     }
 
     enter(camera) {
-      camera.position.set(0, 2.2, 12.2);
-      camera.fov = 47;
-      camera.updateProjectionMatrix();
-      camera.lookAt(0, 0, -1.8);
+      placeCamera(camera, [0, 2.2, 12.2], 47, [0, 0, -1.8]);
       this.setExperimentMode(false);
     }
 

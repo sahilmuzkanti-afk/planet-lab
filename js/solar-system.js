@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { planets } from './planets.js';
 import { applyAlphaTexture, applyColorTexture, keepTextureFallback, loadColorTexture } from './textures.js';
+import { placeCamera } from './camera.js';
 
 function starField(count = 2200, radius = 120) {
     const positions = new Float32Array(count * 3);
@@ -124,10 +125,7 @@ export class SolarSystemScene {
     }
 
     enter(camera) {
-      camera.position.set(0, 1.2, 13);
-      camera.fov = 46;
-      camera.updateProjectionMatrix();
-      camera.lookAt(0, 0, 0);
+      placeCamera(camera, [0, 1.2, 13], 46, [0, 0, 0]);
       this.snapLayout();
     }
 
@@ -167,6 +165,7 @@ export class SolarSystemScene {
     }
 
     update(dt) {
+      const blend = 1 - Math.exp(-4.5 * dt);
       this.planetMeshes.forEach((mesh, index) => {
         mesh.rotation.y += dt * (0.07 + index * 0.006);
         const clouds = mesh.getObjectByName('earth-clouds');
@@ -175,10 +174,10 @@ export class SolarSystemScene {
         const targetY = index % 2 === 0 ? 0 : 0.25;
         const targetZ = index === this.selectedIndex ? 0 : -1.6;
         const targetScale = index === this.selectedIndex ? 1.15 : 0.72;
-        mesh.position.x += (targetX - mesh.position.x) * Math.min(1, dt * 4.5);
-        mesh.position.y += (targetY - mesh.position.y) * Math.min(1, dt * 4.5);
-        mesh.position.z += (targetZ - mesh.position.z) * Math.min(1, dt * 4.5);
-        const scale = mesh.scale.x + (targetScale - mesh.scale.x) * Math.min(1, dt * 4.5);
+        mesh.position.x += (targetX - mesh.position.x) * blend;
+        mesh.position.y += (targetY - mesh.position.y) * blend;
+        mesh.position.z += (targetZ - mesh.position.z) * blend;
+        const scale = mesh.scale.x + (targetScale - mesh.scale.x) * blend;
         mesh.scale.setScalar(scale);
       });
     }
