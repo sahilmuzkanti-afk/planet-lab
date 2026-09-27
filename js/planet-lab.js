@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { applyColorTexture, keepTextureFallback, loadColorTexture } from './textures.js';
 import { placeCamera } from './camera.js';
+import { clearGroup } from './dispose.js';
 
 function createAstronaut(scale = 1) {
     const group = new THREE.Group();
@@ -187,16 +188,7 @@ export class PlanetLabScene {
     }
 
     clearGroup(group) {
-      while (group.children.length) {
-        const child = group.children.pop();
-        child.traverse((node) => {
-          if (node.geometry) node.geometry.dispose();
-          if (node.material) {
-            const materials = Array.isArray(node.material) ? node.material : [node.material];
-            materials.forEach((material) => material.dispose());
-          }
-        });
-      }
+      clearGroup(group);
     }
 
     createAstronaut(scale = 0.72) {

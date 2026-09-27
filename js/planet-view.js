@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { applyAlphaTexture, applyColorTexture, keepTextureFallback, loadColorTexture } from './textures.js';
 import { placeCamera } from './camera.js';
+import { clearGroup } from './dispose.js';
 
 function makeStars() {
     const count = 1600;
@@ -34,11 +35,7 @@ export class PlanetViewScene {
 
     setPlanet(planet) {
       this.planet = planet;
-      while (this.planetGroup.children.length) {
-        const child = this.planetGroup.children.pop();
-        if (child.geometry) child.geometry.dispose();
-        if (child.material) child.material.dispose();
-      }
+      clearGroup(this.planetGroup);
       const radius = planet.name === 'jupiter' ? 2.7 : planet.name === 'saturn' ? 2.45 : Math.max(1.75, 1.95 * planet.scale);
       const material = new THREE.MeshStandardMaterial({ color: planet.surfaceColor, roughness: 0.72 });
       this.mesh = new THREE.Mesh(new THREE.SphereGeometry(radius, 96, 64), material);
