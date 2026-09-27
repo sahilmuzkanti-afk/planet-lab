@@ -1,12 +1,20 @@
 export const G = 6.67430e-11;
 
 export function calculateFallTime(height, gravity) {
-    if (height < 0 || gravity <= 0) return 0;
+    if (!Number.isFinite(height) || !Number.isFinite(gravity) || height <= 0 || gravity <= 0) return 0;
     return Math.sqrt((2 * height) / gravity);
 }
 
 export function calculateDropPosition(initialHeight, time, gravity) {
-    return Math.max(0, initialHeight - 0.5 * gravity * time * time);
+    if (!Number.isFinite(initialHeight) || !Number.isFinite(time) || !Number.isFinite(gravity)) return 0;
+    if (initialHeight <= 0 || gravity <= 0) return 0;
+    const elapsed = Math.max(0, time);
+    return Math.max(0, initialHeight - 0.5 * gravity * elapsed * elapsed);
+}
+
+export function calculateImpactSpeed(height, gravity) {
+    if (!Number.isFinite(height) || !Number.isFinite(gravity) || height <= 0 || gravity <= 0) return 0;
+    return Math.sqrt(2 * gravity * height);
 }
 
 export function calculateWeight(mass, gravity) {

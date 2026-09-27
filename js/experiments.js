@@ -3,6 +3,7 @@ import { earth } from './planets.js';
 import {
     calculateFallTime,
     calculateDropPosition,
+    calculateImpactSpeed,
     calculateWeight,
     calculateProjectilePosition,
     calculateProjectileRange,
@@ -148,7 +149,13 @@ export class ExperimentController {
       this.lab.getStage('planet').add(planetObject);
       const earthTime = calculateFallTime(height, earth.gravity);
       const planetTime = calculateFallTime(height, this.planet.gravity);
-      this.runtime = { kind: 'drop', t: 0, height, earthObject, planetObject, earthTime, planetTime, duration: Math.max(earthTime, planetTime) };
+      const earthImpact = calculateImpactSpeed(height, earth.gravity);
+      const planetImpact = calculateImpactSpeed(height, this.planet.gravity);
+      this.runtime = {
+        kind: 'drop', t: 0, height, earthObject, planetObject,
+        earthTime, planetTime, earthImpact, planetImpact,
+        duration: Math.max(earthTime, planetTime)
+      };
       this.active = true;
     }
 
@@ -319,6 +326,8 @@ export class ExperimentController {
         this.complete([
           ['Earth fall time', `${r.earthTime.toFixed(2)} s`],
           [`${this.planet.displayName} fall time`, `${r.planetTime.toFixed(2)} s`],
+          ['Earth impact speed', `${r.earthImpact.toFixed(2)} m/s`],
+          [`${this.planet.displayName} impact speed`, `${r.planetImpact.toFixed(2)} m/s`],
           ['Difference', `${(r.planetTime - r.earthTime >= 0 ? '+' : '')}${(r.planetTime - r.earthTime).toFixed(2)} s`]
         ]);
       }
