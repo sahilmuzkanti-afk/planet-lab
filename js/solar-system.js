@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { planets } from './planets.js';
 import { applyAlphaTexture, applyColorTexture, keepTextureFallback, loadColorTexture } from './textures.js';
 import { placeCamera } from './camera.js';
+import { advanceAngle, dampedStep } from './motion.js';
 
 function starField(count = 2200, radius = 120) {
     const positions = new Float32Array(count * 3);
@@ -165,19 +166,18 @@ export class SolarSystemScene {
     }
 
     update(dt) {
-      const blend = 1 - Math.exp(-4.5 * dt);
       this.planetMeshes.forEach((mesh, index) => {
-        mesh.rotation.y += dt * (0.07 + index * 0.006);
+        mesh.rotation.y = advanceAngle(mesh.rotation.y, 0.07 + index * 0.006, dt);
         const clouds = mesh.getObjectByName('earth-clouds');
-        if (clouds) clouds.rotation.y += dt * 0.025;
+        if (clouds) clouds.rotation.y = advanceAngle(clouds.rotation.y, 0.025, dt);
         const targetX = (index - this.selectedIndex) * 7;
         const targetY = index % 2 === 0 ? 0 : 0.25;
         const targetZ = index === this.selectedIndex ? 0 : -1.6;
         const targetScale = index === this.selectedIndex ? 1.15 : 0.72;
-        mesh.position.x += (targetX - mesh.position.x) * blend;
-        mesh.position.y += (targetY - mesh.position.y) * blend;
-        mesh.position.z += (targetZ - mesh.position.z) * blend;
-        const scale = mesh.scale.x + (targetScale - mesh.scale.x) * blend;
+        mesh.position.x = dampedStep(mesh.position.x, targetX, 4.5, dt);
+        mesh.position.y = dampedStep(mesh.position.y, targetY, 4.5, dt);
+        mesh.position.z = dampedStep(mesh.position.z, targetZ, 4.5, dt);
+        const scale = dampedStep(mesh.scale.x, targetScale, 4.5, dt);
         mesh.scale.setScalar(scale);
       });
     }

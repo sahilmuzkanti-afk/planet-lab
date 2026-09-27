@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { applyColorTexture, keepTextureFallback, loadColorTexture } from './textures.js';
 import { placeCamera } from './camera.js';
 import { clearGroup } from './dispose.js';
+import { advanceAngle } from './motion.js';
 
 function createAstronaut(scale = 1) {
     const group = new THREE.Group();
@@ -209,6 +210,8 @@ export class PlanetLabScene {
 
     update(dt) {
       const backdrop = this.environment.children.find((child) => child.geometry?.type === 'SphereGeometry');
-      if (backdrop && !this.planet?.hasSolidSurface) backdrop.rotation.y += dt * 0.025;
+      if (backdrop && !this.planet?.hasSolidSurface) {
+        backdrop.rotation.y = advanceAngle(backdrop.rotation.y, 0.025, dt);
+      }
     }
 }

@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { applyAlphaTexture, applyColorTexture, keepTextureFallback, loadColorTexture } from './textures.js';
 import { placeCamera } from './camera.js';
 import { clearGroup } from './dispose.js';
+import { advanceAngle } from './motion.js';
 
 function makeStars() {
     const count = 1600;
@@ -32,13 +33,13 @@ export class PlanetViewScene {
       this.planet = null;
       this.mesh = null;
       this.loadVersion = 0;
+      this.elapsed = 0;
     }
 
     setPlanet(planet) {
       if (this.planet === planet && this.mesh) return false;
       const loadVersion = ++this.loadVersion;
       this.planet = planet;
-      this.planetGroup.rotation.z = 0;
       clearGroup(this.planetGroup);
       const radius = planet.name === 'jupiter' ? 2.7 : planet.name === 'saturn' ? 2.45 : Math.max(1.75, 1.95 * planet.scale);
       const material = new THREE.MeshStandardMaterial({ color: planet.surfaceColor, roughness: 0.72 });
@@ -101,9 +102,10 @@ export class PlanetViewScene {
     }
 
     update(dt) {
-      if (this.mesh) this.mesh.rotation.y += dt * 0.07;
+      this.elapsed += dt;
+      if (this.mesh) this.mesh.rotation.y = advanceAngle(this.mesh.rotation.y, 0.07, dt);
       const clouds = this.planetGroup.getObjectByName('detail-earth-clouds');
-      if (clouds) clouds.rotation.y += dt * 0.045;
-      this.planetGroup.rotation.z = Math.sin(performance.now() * 0.00007) * 0.012;
+      if (clouds) clouds.rotation.y = advanceAngle(clouds.rotation.y, 0.045, dt);
+      this.planetGroup.rotation.z = Math.sin(this.elapsed * 0.07) * 0.012;
     }
 }
